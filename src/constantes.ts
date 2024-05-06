@@ -30,6 +30,7 @@ export const visualizerSettings = {
   weightingType: 'a',
   slopeFunctionsOffset: 1,
   channelMode: 'mono',
+  mode: 'mono',
   treatAsComplex: false,
   freeze: false,
   showResponse: true,

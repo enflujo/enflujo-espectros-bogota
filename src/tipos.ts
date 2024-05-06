@@ -17,3 +17,9 @@ export type TColor = {
   g: number;
   b: number;
 };
+
+export type TBandas = {
+  lo: number;
+  ctr: number;
+  hi: number;
+};

@@ -1,4 +1,5 @@
-import type { FFTComplejo } from './tipos';
+import { visualizerSettings } from './constantes';
+import type { FFTComplejo, TBandas } from './tipos';
 
 export function map(x: number, min: number, max: number, targetMin: number, targetMax: number) {
   return ((x - min) / (max - min)) * (targetMax - targetMin) + targetMin;
@@ -279,4 +280,114 @@ export function ncMethod(fftData: FFTComplejo[], distancia = 1) {
     magnitudeData[i] = Math.sqrt(Math.max(0, -(cosL * cosR) - sinL * sinR));
   }
   return magnitudeData;
+}
+
+export function generateOctaveBands(
+  bandsPerOctave = 12,
+  lowerNote = 4,
+  higherNote = 123,
+  detune = 0,
+  tuningFreq = 440,
+  bandwidth = 0.5
+) {
+  const tuningNote = isFinite(Math.log2(tuningFreq)) ? Math.round((Math.log2(tuningFreq) - 4) * 12) * 2 : 0;
+  const root24 = 2 ** (1 / 24);
+  const c0 = tuningFreq * root24 ** -tuningNote; // ~16.35 Hz
+  const groupNotes = 24 / bandsPerOctave;
+  const bands: TBandas[] = [];
+
+  for (let i = Math.round((lowerNote * 2) / groupNotes); i <= Math.round((higherNote * 2) / groupNotes); i++) {
+    bands.push({
+      lo: c0 * root24 ** ((i - bandwidth) * groupNotes + detune),
+      ctr: c0 * root24 ** (i * groupNotes + detune),
+      hi: c0 * root24 ** ((i + bandwidth) * groupNotes + detune),
+    });
+  }
+  return bands;
+}
+
+export function calcRGB(r = 0, g = 0, b = 0) {
+  return {
+    r: isNaN(r) ? 0 : clamp(r, 0, 255),
+    g: isNaN(g) ? 0 : clamp(g, 0, 255),
+    b: isNaN(b) ? 0 : clamp(b, 0, 255),
+  };
+}
+
+// Weighting and frequency slope functions
+function calcFreqTilt(x: number, amount = 3, offset = 1000) {
+  return (x / offset) ** (amount / 6);
+}
+
+function applyEqualize(x: number, amount = 6, depth = 1024, offset = 44100) {
+  const pos = (x * depth) / offset,
+    bias = 1.0025 ** -pos * 0.04;
+  return (10 * Math.log10(1 + bias + ((pos + 1) * (9 - bias)) / depth)) ** (amount / 6);
+}
+
+function applyWeight(x: number, weightAmount = 1, weightType = 'a') {
+  const f2 = x ** 2;
+  switch (weightType) {
+    case 'a':
+      return (
+        ((1.2588966 * 148840000 * f2 ** 2) /
+          ((f2 + 424.36) * Math.sqrt((f2 + 11599.29) * (f2 + 544496.41)) * (f2 + 148840000))) **
+        weightAmount
+      );
+    case 'b':
+      return (
+        ((1.019764760044717 * 148840000 * x ** 3) / ((f2 + 424.36) * Math.sqrt(f2 + 25122.25) * (f2 + 148840000))) **
+        weightAmount
+      );
+    case 'c':
+      return ((1.0069316688518042 * 148840000 * f2) / ((f2 + 424.36) * (f2 + 148840000))) ** weightAmount;
+    case 'd':
+      return (
+        ((x / 6.8966888496476e-5) *
+          Math.sqrt(
+            ((1037918.48 - f2) * (1037918.48 - f2) + 1080768.16 * f2) /
+              ((9837328 - f2) * (9837328 - f2) + 11723776 * f2) /
+              ((f2 + 79919.29) * (f2 + 1345600))
+          )) **
+        weightAmount
+      );
+    case 'm':
+      const h1 = -4.737338981378384e-24 * f2 ** 3 + 2.043828333606125e-15 * f2 ** 2 - 1.363894795463638e-7 * f2 + 1,
+        h2 = 1.306612257412824e-19 * x ** 5 - 2.118150887518656e-11 * x ** 3 + 5.559488023498642e-4 * x;
+
+      return ((8.128305161640991 * 1.246332637532143e-4 * x) / Math.hypot(h1, h2)) ** weightAmount;
+    default:
+      return 1;
+  }
+}
+
+export function weightSpectrumAtFreq(x: number) {
+  return (
+    calcFreqTilt(x, visualizerSettings.slope, visualizerSettings.slopeOffset) *
+    applyEqualize(
+      x,
+      visualizerSettings.equalizeAmount,
+      visualizerSettings.equalizeDepth,
+      visualizerSettings.equalizeOffset
+    ) *
+    applyWeight(x, visualizerSettings.weightingAmount / 100, visualizerSettings.weightingType)
+  );
+}
+
+export function ascale(x: number, alt = false) {
+  const minDecibels = alt ? visualizerSettings.altMinDecibels : visualizerSettings.minDecibels;
+  const maxDecibels = alt ? visualizerSettings.altMaxDecibels : visualizerSettings.maxDecibels;
+  const useAbsolute = alt ? visualizerSettings.altUseAbsolute : visualizerSettings.useAbsolute;
+  const gamma = alt ? visualizerSettings.altGamma : visualizerSettings.gamma;
+  const useDecibels = alt ? visualizerSettings.altUseDecibels : visualizerSettings.useDecibels;
+
+  if (useDecibels) return map(20 * Math.log10(x), minDecibels, maxDecibels, 0, 1);
+  else
+    return map(
+      x ** (1 / gamma),
+      +!useAbsolute * (10 ** (minDecibels / 20)) ** (1 / gamma),
+      (10 ** (maxDecibels / 20)) ** (1 / gamma),
+      0,
+      1
+    );
 }
