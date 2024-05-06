@@ -36,10 +36,13 @@ canvas {
   width: 100%;
 }
 
-#container {
+#contenedor {
   height: calc(100vh - 40px);
 }
 
-#upload {
-  display: none;
+#cargarAudio {
+  position: absolute;
+  z-index: 999;
+  top: 0;
+  left: 0;
 }

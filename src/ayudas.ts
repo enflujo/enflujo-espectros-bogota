@@ -1,17 +1,19 @@
-export function map(x, min, max, targetMin, targetMax) {
+import type { FFTComplejo } from './tipos';
+
+export function map(x: number, min: number, max: number, targetMin: number, targetMax: number) {
   return ((x - min) / (max - min)) * (targetMax - targetMin) + targetMin;
 }
 
-export function clamp(x, min, max) {
+export function clamp(x: number, min: number, max: number) {
   return Math.min(Math.max(x, min), max);
 }
 
-export function idxWrapOver(x, length) {
+export function idxWrapOver(x: number, length: number) {
   return ((x % length) + length) % length;
 }
 
 // Hz and FFT bin conversion
-export function hertzToFFTBin(x, y = 'round', bufferSize = 4096, sampleRate = 44100) {
+export function hertzToFFTBin(x: number, y = 'round', bufferSize = 4096, sampleRate = 44100) {
   const bin = (x * bufferSize) / sampleRate;
   let func = y;
 
@@ -20,26 +22,31 @@ export function hertzToFFTBin(x, y = 'round', bufferSize = 4096, sampleRate = 44
   return Math[func](bin);
 }
 
-export function fftBinToHertz(x, bufferSize = 4096, sampleRate = 44100) {
+export function fftBinToHertz(x: number, bufferSize = 4096, sampleRate = 44100) {
   return (x * sampleRate) / bufferSize;
 }
 
 // Calculate the FFT
-export function calcFFT(input, full = false) {
-  let fft = input.map((x) => x);
-  let fft2 = input.map((x) => x);
+export function calcFFT(input: number[]) {
+  const fft = [...input];
+  const fft2 = [...input];
+
   transform(fft, fft2);
-  let output = new Array(Math.round(fft.length / (2 - full))).fill(0);
-  for (let i = 0; i < output.length; i++) {
-    output[i] = Math.hypot(fft[i], fft2[i]) / fft.length;
+  const respuesta = new Array(Math.round(fft.length)).fill(0);
+
+  for (let i = 0; i < respuesta.length; i++) {
+    respuesta[i] = Math.hypot(fft[i], fft2[i]) / fft.length;
   }
-  return output;
+
+  return respuesta;
 }
 
-export function calcComplexFFT(input, includeImag = false) {
-  let fft = input.map((x) => x * Math.sqrt(1 - includeImag));
-  let fft2 = input.map((x) => x * includeImag);
+export function calcComplexFFT(input: number[], includeImag = false) {
+  const fft = input.map((x) => x * Math.sqrt(1 - +includeImag));
+  const fft2 = input.map((x) => x * +includeImag);
+
   transform(fft, fft2);
+
   return input.map((_, i, arr) => {
     return {
       re: fft[i] / (arr.length / 2),
@@ -50,11 +57,13 @@ export function calcComplexFFT(input, includeImag = false) {
   });
 }
 
-export function calcComplexInputFFT(real, imag) {
+export function calcComplexInputFFT(real: number[], imag: number[]) {
   if (real.length !== imag.length) return [];
-  const fft1 = real.map((x) => x),
-    fft2 = imag.map((x) => x);
+
+  const fft1 = [...real];
+  const fft2 = [...imag];
   transform(fft1, fft2);
+
   return real.map((_, i, arr) => {
     return {
       re: fft1[i] / arr.length,
@@ -75,7 +84,7 @@ export function calcComplexInputFFT(real, imag) {
  * Computes the discrete Fourier transform (DFT) of the given complex vector, storing the result back into the vector.
  * The vector can have any length. This is a wrapper function.
  */
-export function transform(real, imag) {
+export function transform(real: number[], imag: number[]) {
   const n = real.length;
   if (n != imag.length) throw 'Mismatched lengths';
   if (n <= 0) return;
@@ -90,7 +99,7 @@ export function transform(real, imag) {
  * Computes the inverse discrete Fourier transform (IDFT) of the given complex vector, storing the result back into the vector.
  * The vector can have any length. This is a wrapper function. This transform does not perform scaling, so the inverse is not a true inverse.
  */
-export function inverseTransform(real, imag) {
+export function inverseTransform(real: number[], imag: number[]) {
   transform(imag, real);
 }
 
@@ -98,7 +107,7 @@ export function inverseTransform(real, imag) {
  * Computes the discrete Fourier transform (DFT) of the given complex vector, storing the result back into the vector.
  * The vector's length must be a power of 2. Uses the Cooley-Tukey decimation-in-time radix-2 algorithm.
  */
-export function transformRadix2(real, imag) {
+export function transformRadix2(real: number[], imag: number[]) {
   // Length variables
   const n = real.length;
   if (n != imag.length) throw 'Mismatched lengths';
@@ -109,8 +118,8 @@ export function transformRadix2(real, imag) {
   if (2 ** Math.trunc(logN) !== n) throw 'Length is not a power of 2';
 
   // Trigonometric tables
-  let cosTable = new Array(n / 2);
-  let sinTable = new Array(n / 2);
+  const cosTable = new Array(n / 2);
+  const sinTable = new Array(n / 2);
   for (let i = 0; i < n / 2; i++) {
     cosTable[i] = Math.cos((2 * Math.PI * i) / n);
     sinTable[i] = Math.sin((2 * Math.PI * i) / n);
@@ -118,7 +127,7 @@ export function transformRadix2(real, imag) {
 
   // Bit-reversed addressing permutation
   for (let i = 0; i < n; i++) {
-    let j = reverseBits(i, logN);
+    const j = reverseBits(i, logN);
     if (j > i) {
       let temp = real[i];
       real[i] = real[j];
@@ -131,8 +140,8 @@ export function transformRadix2(real, imag) {
 
   // Cooley-Tukey decimation-in-time radix-2 FFT
   for (let size = 2; size <= n; size *= 2) {
-    let halfsize = size / 2;
-    let tablestep = n / size;
+    const halfsize = size / 2;
+    const tablestep = n / size;
     for (let i = 0; i < n; i += size) {
       for (let j = i, k = 0; j < i + halfsize; j++, k += tablestep) {
         const l = j + halfsize;
@@ -147,7 +156,7 @@ export function transformRadix2(real, imag) {
   }
 
   // Returns the integer whose value is the reverse of the lowest 'bits' bits of the integer 'x'.
-  function reverseBits(x, bits) {
+  function reverseBits(x: number, bits: number) {
     let y = 0;
     for (let i = 0; i < bits; i++) {
       y = (y << 1) | (x & 1);
@@ -162,30 +171,32 @@ export function transformRadix2(real, imag) {
  * The vector can have any length. This requires the convolution function, which in turn requires the radix-2 FFT function.
  * Uses Bluestein's chirp z-transform algorithm.
  */
-export function transformBluestein(real, imag) {
+export function transformBluestein(real: number[], imag: number[]) {
   // Find a power-of-2 convolution length m such that m >= n * 2 + 1
   const n = real.length;
   if (n != imag.length) throw 'Mismatched lengths';
   const m = 2 ** Math.trunc(Math.log2(n * 2) + 1);
 
   // Trignometric tables
-  let cosTable = new Array(n);
-  let sinTable = new Array(n);
+  const cosTable = new Array(n);
+  const sinTable = new Array(n);
+
   for (let i = 0; i < n; i++) {
-    let j = (i * i) % (n * 2); // This is more accurate than j = i * i
+    const j = (i * i) % (n * 2); // This is more accurate than j = i * i
     cosTable[i] = Math.cos((Math.PI * j) / n);
     sinTable[i] = Math.sin((Math.PI * j) / n);
   }
 
   // Temporary vectors and preprocessing
-  let areal = newArrayOfZeros(m);
-  let aimag = newArrayOfZeros(m);
+  const areal = newArrayOfZeros(m);
+  const aimag = newArrayOfZeros(m);
   for (let i = 0; i < n; i++) {
     areal[i] = real[i] * cosTable[i] + imag[i] * sinTable[i];
     aimag[i] = -real[i] * sinTable[i] + imag[i] * cosTable[i];
   }
-  let breal = newArrayOfZeros(m);
-  let bimag = newArrayOfZeros(m);
+
+  const breal = newArrayOfZeros(m);
+  const bimag = newArrayOfZeros(m);
   breal[0] = cosTable[0];
   bimag[0] = sinTable[0];
   for (let i = 1; i < n; i++) {
@@ -194,8 +205,8 @@ export function transformBluestein(real, imag) {
   }
 
   // Convolution
-  let creal = new Array(m);
-  let cimag = new Array(m);
+  const creal = new Array(m);
+  const cimag = new Array(m);
   convolveComplex(areal, aimag, breal, bimag, creal, cimag);
 
   // Postprocessing
@@ -208,7 +219,7 @@ export function transformBluestein(real, imag) {
 /*
  * Computes the circular convolution of the given real vectors. Each vector's length must be the same.
  */
-export function convolveReal(x, y, out) {
+export function convolveReal(x: number[], y: number[], out: number[]) {
   const n = x.length;
   if (n != y.length || n != out.length) throw 'Mismatched lengths';
   convolveComplex(x, newArrayOfZeros(n), y, newArrayOfZeros(n), out, newArrayOfZeros(n));
@@ -217,7 +228,14 @@ export function convolveReal(x, y, out) {
 /*
  * Computes the circular convolution of the given complex vectors. Each vector's length must be the same.
  */
-export function convolveComplex(xreal, ximag, yreal, yimag, outreal, outimag) {
+export function convolveComplex(
+  xreal: number[],
+  ximag: number[],
+  yreal: number[],
+  yimag: number[],
+  outreal: number[],
+  outimag: number[]
+) {
   const n = xreal.length;
   if (n != ximag.length || n != yreal.length || n != yimag.length || n != outreal.length || n != outimag.length)
     throw 'Mismatched lengths';
@@ -243,7 +261,22 @@ export function convolveComplex(xreal, ximag, yreal, yimag, outreal, outimag) {
   }
 }
 
-export function newArrayOfZeros(n) {
+export function newArrayOfZeros(n: number) {
   let result = new Array(n).fill(0);
   return result;
+}
+
+// NC method
+export function ncMethod(fftData: FFTComplejo[], distancia = 1) {
+  const magnitudeData: number[] = [];
+  const offset = Math.trunc(distancia / 2);
+
+  for (let i = 0; i < fftData.length; i++) {
+    const cosL = fftData[idxWrapOver(i - offset, fftData.length)].re;
+    const sinL = fftData[idxWrapOver(i - offset, fftData.length)].im;
+    const cosR = fftData[idxWrapOver(i - offset + distancia, fftData.length)].re;
+    const sinR = fftData[idxWrapOver(i - offset + distancia, fftData.length)].im;
+    magnitudeData[i] = Math.sqrt(Math.max(0, -(cosL * cosR) - sinL * sinR));
+  }
+  return magnitudeData;
 }

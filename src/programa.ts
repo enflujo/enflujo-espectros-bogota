@@ -1,3 +1,5 @@
+import './scss/estilos.scss';
+
 import {
   calcComplexFFT,
   calcComplexInputFFT,
@@ -7,33 +9,47 @@ import {
   hertzToFFTBin,
   idxWrapOver,
   map,
+  ncMethod,
 } from './ayudas';
-import './scss/estilos.scss';
 
+import {
+  channelModes,
+  displayModes,
+  drawModes,
+  fscaleSettings,
+  visualizerSettings,
+  weightingTypes,
+  windowFunctionSettings,
+} from './constantes';
+import { BarraEspectrograma, TColor } from './tipos';
+
+const contenedor = document.getElementById('contenedor') as HTMLDivElement;
 const audioCtx = new AudioContext();
-const audioPlayer = document.getElementById('audio');
-const localAudioElement = document.getElementById('audioFileInput');
-localAudioElement.addEventListener('change', loadLocalFile);
-const canvas = document.getElementById('canvas'),
-  ctx = canvas.getContext('2d'),
-  container = document.getElementById('container');
+const reproductor = document.getElementById('reproductor') as HTMLAudioElement;
+const audioLocal = document.getElementById('cargarAudio') as HTMLInputElement;
+const lienzo = document.getElementById('lienzo') as HTMLCanvasElement;
+const ctx = lienzo.getContext('2d');
+
+audioLocal.addEventListener('change', loadLocalFile);
+
 // necessary for spectrogram visualization
-const auxCanvas = new OffscreenCanvas(0, 0),
-  auxCtx = auxCanvas.getContext('2d');
+const auxCanvas = new OffscreenCanvas(0, 0);
+const auxCtx = auxCanvas.getContext('2d');
 // audio part
-const audioSource = audioCtx.createMediaElementSource(audioPlayer);
-const analyser = audioCtx.createAnalyser(),
-  analyserL = audioCtx.createAnalyser(),
-  analyserR = audioCtx.createAnalyser();
+const audioSource = audioCtx.createMediaElementSource(reproductor);
+const analyser = audioCtx.createAnalyser();
+const analyserL = audioCtx.createAnalyser();
+const analyserR = audioCtx.createAnalyser();
 analyser.fftSize = 32768; // maxes out FFT size
 analyserL.fftSize = analyser.fftSize;
 analyserR.fftSize = analyser.fftSize;
-const dataArray = new Float32Array(analyser.fftSize),
-  dataArrayL = new Float32Array(analyserL.fftSize),
-  dataArrayR = new Float32Array(analyserR.fftSize);
+const dataArray = new Float32Array(analyser.fftSize);
+const dataArrayL = new Float32Array(analyserL.fftSize);
+const dataArrayR = new Float32Array(analyserR.fftSize);
 // DelayNode (optional to mimic reaction time for non-realtime visualizations or even foobar2000 visualizations)
-const delay = audioCtx.createDelay(),
-  splitter = audioCtx.createChannelSplitter(2); // only work well for stereo signal, not sure how it works on the surround sound
+const delay = audioCtx.createDelay();
+const splitter = audioCtx.createChannelSplitter(2); // only work well for stereo signal, not sure how it works on the surround sound
+
 audioSource.connect(delay);
 delay.connect(audioCtx.destination);
 //audioSource.connect(audioCtx.destination);
@@ -42,144 +58,15 @@ audioSource.connect(splitter);
 splitter.connect(analyserL, 0);
 splitter.connect(analyserR, 1);
 
-const visualizerSettings = {
-    inputSize: 4096,
-    fftSize: 4096,
-    minFreq: 20,
-    maxFreq: 20000,
-    fscale: 'logarithmic',
-    windowFunction: 'hann',
-    windowParameter: 1,
-    windowSkew: 0,
-    useNC: false,
-    ncDistance: 1,
-    hzLinearFactor: 0,
-    minDecibels: -90,
-    maxDecibels: 0,
-    useDecibels: true,
-    gamma: 1,
-    useAbsolute: true,
-    decoupleAmplitudeFromSpectrum: false,
-    altMinDecibels: -90,
-    altMaxDecibels: 0,
-    altUseDecibels: true,
-    altGamma: 1,
-    altUseAbsolute: true,
-    equalizeAmount: 0,
-    equalizeOffset: 44100,
-    equalizeDepth: 1024,
-    slope: 0,
-    slopeOffset: 1000,
-    weightingAmount: 0,
-    weightingType: 'a',
-    slopeFunctionsOffset: 1,
-    channelMode: 'mono',
-    treatAsComplex: false,
-    freeze: false,
-    showResponse: true,
-    showLabels: true,
-    showLabelsY: true,
-    amplitudeLabelInterval: 6,
-    showDC: true,
-    showNyquist: true,
-    mirrorLabels: true,
-    diffLabels: false,
-    noteLabels: false,
-    labelTuning: 440,
-    useGradient: false,
-    alternateColor: false,
-    drawMode: 'stroke',
-    useBars: false,
-    darkMode: false,
-    compensateDelay: false,
-    display: 'spectrum',
-  },
-  drawModes = {
-    Line: 'stroke',
-    Fill: 'fill',
-    Both: 'both',
-  },
-  displayModes = {
-    Spectrum: 'spectrum',
-    Spectrogram: 'spectrogram',
-    'Spectrum and spectrogram': 'both',
-  },
-  windowFunctionSettings = {
-    Rectangular: 'rectangular',
-    'Triangular (Bartlett)': 'triangular',
-    Quadratic: 'quadratic spline',
-    Parzen: 'parzen',
-    Welch: 'welch',
-    'Power of sine': 'power of sine',
-    'Power of circle': 'circle',
-    'Tukey (tapered cosine)': 'tukey',
-    Vorbis: 'vorbis',
-    'Cascaded sine': 'cascaded sine',
-    Hann: 'hann',
-    Hamming: 'hamming',
-    Blackman: 'blackman',
-    Nuttall: 'nuttall',
-    'Flat top': 'flattop',
-    Gaussian: 'gauss',
-    'Hyperbolic cosine': 'cosh',
-    'Hyperbolic cosine 2': 'cosh 2',
-    Kaiser: 'kaiser',
-    Poisson: 'exponential',
-    'Hyperbolic secant': 'sech',
-    Galss: 'galss', // Name derived from a particular program name (Aimp Galss Player) in Titanic Tools that pre-installed on Windows 7 Titanic Edition bootleg
-  },
-  fscaleSettings = {
-    Bark: 'bark',
-    ERB: 'erb',
-    Cams: 'cam',
-    'Mel (AIMP)': 'mel',
-    Linear: 'linear',
-    Logarithmic: 'logarithmic',
-    'Hyperbolic sine': 'sinh',
-    'Shifted logarithmic': 'shifted log',
-    'Nth root': 'nth root',
-    'Negative exponential': 'negative exponential',
-    'Adjustable Bark': 'adjustable bark',
-    Period: 'period',
-  },
-  channelModes = {
-    Mono: 'mono',
-    Stereo: 'stereo',
-    'Mid/Side': 'ms',
-    'L/R and M/S': 'both',
-  },
-  weightingTypes = {
-    A: 'a',
-    B: 'b',
-    C: 'c',
-    D: 'd',
-    'ITU-R 468': 'm',
-  },
-  loader = {
-    url: '',
-    load: function () {
-      audioPlayer.src = this.url;
-      audioPlayer.play();
-    },
-    loadLocal: function () {
-      localAudioElement.click();
-    },
-    toggleFullscreen: (_) => {
-      if (document.fullscreenElement === canvas) document.exitFullscreen();
-      else canvas.requestFullscreen();
-    },
-  };
-
-let gui = new dat.GUI();
-gui.add(loader, 'url').name('URL');
-gui.add(loader, 'load').name('Load');
-gui.add(loader, 'loadLocal').name('Load from local device');
+const gui = new dat.GUI();
 let settings = gui.addFolder('Visualization settings');
+
 const freqDistFolder = settings.addFolder('Frequency distribution');
 freqDistFolder.add(visualizerSettings, 'minFreq', 0, 96000).name('Minimum frequency'); // up to 192kHz sample rate
 freqDistFolder.add(visualizerSettings, 'maxFreq', 0, 96000).name('Maximum frequency');
 freqDistFolder.add(visualizerSettings, 'fscale', fscaleSettings).name('Frequency scale');
 freqDistFolder.add(visualizerSettings, 'hzLinearFactor', 0, 100).name('Hz linear factor');
+
 const transformFolder = settings.addFolder('Transform algorithm and window functions');
 transformFolder.add(visualizerSettings, 'inputSize', 32, 32768, 1).name('Input size');
 transformFolder.add(visualizerSettings, 'fftSize', 32, 32768, 1).name('FFT size');
@@ -188,6 +75,7 @@ transformFolder.add(visualizerSettings, 'windowParameter', 0, 10).name('Window p
 transformFolder.add(visualizerSettings, 'windowSkew', -1, 1).name('Window skew');
 transformFolder.add(visualizerSettings, 'useNC').name('Use NC method');
 transformFolder.add(visualizerSettings, 'ncDistance', 1, 1024, 1).name('NC method distance');
+
 const amplitudeFolder = settings.addFolder('Amplitude');
 amplitudeFolder.add(visualizerSettings, 'useDecibels').name('Use logarithmic amplitude/decibel scale');
 amplitudeFolder.add(visualizerSettings, 'useAbsolute').name('Use absolute value');
@@ -197,12 +85,14 @@ amplitudeFolder.add(visualizerSettings, 'maxDecibels', -120, 6).name('Higher amp
 amplitudeFolder
   .add(visualizerSettings, 'decoupleAmplitudeFromSpectrum')
   .name('Decouple amplitude scaling of spectrogram from spectrum');
+
 const altAmplitudeFolder = amplitudeFolder.addFolder('Spectrogram colormap scaling');
 altAmplitudeFolder.add(visualizerSettings, 'altUseDecibels').name('Use logarithmic amplitude/decibel scale');
 altAmplitudeFolder.add(visualizerSettings, 'altUseAbsolute').name('Use absolute value');
 altAmplitudeFolder.add(visualizerSettings, 'altGamma', 0.5, 10).name('Gamma');
 altAmplitudeFolder.add(visualizerSettings, 'altMinDecibels', -120, 6).name('Lower amplitude range');
 altAmplitudeFolder.add(visualizerSettings, 'altMaxDecibels', -120, 6).name('Higher amplitude range');
+
 const weightingFolder = amplitudeFolder.addFolder('Frequency weighting');
 weightingFolder.add(visualizerSettings, 'slope', -12, 12).name('Frequency slope (dB per-octave)');
 weightingFolder.add(visualizerSettings, 'slopeOffset', 0, 96000).name('Slope offset (Hz = 0dB)');
@@ -214,9 +104,11 @@ weightingFolder.add(visualizerSettings, 'weightingType', weightingTypes).name('W
 weightingFolder
   .add(visualizerSettings, 'slopeFunctionsOffset', 0, 8)
   .name('Slope functions offset (offset by sample rate/FFT size in samples)');
+
 const channelFolder = settings.addFolder('Channel configuration');
 channelFolder.add(visualizerSettings, 'channelMode', channelModes).name('Channel mode');
 channelFolder.add(visualizerSettings, 'treatAsComplex').name('Treat channel pairs as complex input');
+
 const labelFolder = settings.addFolder('Labels and grid');
 labelFolder.add(visualizerSettings, 'showLabels').name('Show horizontal-axis labels');
 labelFolder.add(visualizerSettings, 'showLabelsY').name('Show vertical-axis labels');
@@ -229,8 +121,9 @@ labelFolder.add(visualizerSettings, 'noteLabels').name('Note labels');
 labelFolder
   .add(visualizerSettings, 'labelTuning', 0, 96000)
   .name('Note labels tuning (nearest note = tuning frequency in Hz)');
+
 const appearanceFolder = settings.addFolder('Appearance');
-appearanceFolder.add(visualizerSettings, 'display', displayModes).name('Display which').onChange(resizeCanvas);
+appearanceFolder.add(visualizerSettings, 'display', displayModes).name('Display which').onChange(escalar);
 appearanceFolder.add(visualizerSettings, 'alternateColor').name('Use alternate channel color');
 appearanceFolder.add(visualizerSettings, 'useGradient').name('Use color gradient');
 appearanceFolder.add(visualizerSettings, 'drawMode', drawModes).name('Draw mode');
@@ -238,37 +131,38 @@ appearanceFolder.add(visualizerSettings, 'useBars').name('Draw bars instead of l
 appearanceFolder.add(visualizerSettings, 'darkMode').name('Dark mode');
 settings.add(visualizerSettings, 'freeze').name('Freeze analyser');
 settings.add(visualizerSettings, 'compensateDelay').name('Delay compensation');
-gui.add(loader, 'toggleFullscreen').name('Toggle fullscreen mode');
 
-function resizeCanvas() {
-  const scale = devicePixelRatio,
-    isFullscreen = document.fullscreenElement === canvas;
-  canvas.width = (isFullscreen ? innerWidth : container.clientWidth) * scale;
-  canvas.height = (isFullscreen ? innerHeight : container.clientHeight) * scale;
-  auxCanvas.width = canvas.width;
-  auxCanvas.height = visualizerSettings.display === 'both' ? Math.trunc(canvas.height / 2) : canvas.height;
+addEventListener('resize', escalar);
+escalar();
+visualize();
+
+function escalar() {
+  const escala = devicePixelRatio;
+  lienzo.width = contenedor.clientWidth * escala;
+  lienzo.height = contenedor.clientHeight * escala;
+  auxCanvas.width = lienzo.width;
+  auxCanvas.height = visualizerSettings.display === 'both' ? Math.trunc(lienzo.height / 2) : lienzo.height;
 }
 
-addEventListener('click', () => {
-  if (audioCtx.state == 'suspended') audioCtx.resume();
-});
-addEventListener('resize', resizeCanvas);
-resizeCanvas();
+function loadLocalFile(evento: Event) {
+  const elemento = evento.target as HTMLInputElement;
+  const archivo = elemento.files?.item(0);
 
-function loadLocalFile(event) {
-  const file = event.target.files[0],
-    reader = new FileReader();
-  reader.onload = (e) => {
-    audioPlayer.src = e.target.result;
-    audioPlayer.play();
+  if (!archivo) return;
+
+  const lector = new FileReader();
+  lector.onload = (e) => {
+    if (!e.target?.result) return;
+    reproductor.src = e.target.result as string;
+    reproductor.play();
   };
 
-  reader.readAsDataURL(file);
+  lector.readAsDataURL(archivo);
 }
-const test = map(0, 0, 1, -1, 1); // Smoke testing
-visualize();
+
 function visualize() {
-  delay.delayTime.value = (visualizerSettings.inputSize / audioCtx.sampleRate) * visualizerSettings.compensateDelay;
+  if (!ctx || !auxCtx) return;
+  delay.delayTime.value = (visualizerSettings.inputSize / audioCtx.sampleRate) * +visualizerSettings.compensateDelay;
   // Visualization part
   if (!visualizerSettings.freeze) {
     analyser.getFloatTimeDomainData(dataArray);
@@ -277,17 +171,18 @@ function visualize() {
       analyserR.getFloatTimeDomainData(dataArrayR);
     }
   }
-  const fftData = new Array(visualizerSettings.fftSize).fill(0),
-    fftData1 = Array.from(fftData),
-    fftData2 = Array.from(fftData),
-    fftData3 = Array.from(fftData),
-    fftData4 = Array.from(fftData);
-  let norm = 0,
-    spectrum0,
-    spectrum1,
-    spectrum2,
-    spectrum3,
-    spectrum4;
+  const fftData: number[] = new Array(visualizerSettings.fftSize).fill(0);
+  const fftData1 = Array.from(fftData);
+  const fftData2 = Array.from(fftData);
+  const fftData3 = Array.from(fftData);
+  const fftData4 = Array.from(fftData);
+  let norm = 0;
+  let spectrum0: number[];
+  let spectrum1: number[];
+  let spectrum2: number[];
+  let spectrum3: number[];
+  let spectrum4: number[];
+
   for (let i = 0; i < visualizerSettings.inputSize; i++) {
     const x = map(i, 0, visualizerSettings.inputSize, -1, 1),
       w = applyWindow(
@@ -340,7 +235,8 @@ function visualize() {
   ctx.globalCompositeOperation = 'source-over';
   ctx.fillStyle = bgColor;
   ctx.strokeStyle = bgColor;
-  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  ctx.fillRect(0, 0, lienzo.width, lienzo.height);
+
   switch (visualizerSettings.channelMode) {
     case 'stereo':
     case 'ms':
@@ -352,16 +248,19 @@ function visualize() {
         color4 = visualizerSettings.channelMode === 'ms' ? color2 : isAlternate ? cR : cS,
         isComplex = visualizerSettings.treatAsComplex;
       ctx.globalCompositeOperation = visualizerSettings.darkMode ? 'lighten' : 'darken';
+
       if (visualizerSettings.channelMode === 'stereo' || visualizerSettings.channelMode === 'both') {
-        let value1 = fftData1.map((x) => ((x * fftData1.length) / norm) * Math.SQRT2),
-          value2 = fftData2.map((x) => ((x * fftData2.length) / norm) * Math.SQRT2);
+        const value1 = fftData1.map((x) => ((x * fftData1.length) / norm) * Math.SQRT2);
+        const value2 = fftData2.map((x) => ((x * fftData2.length) / norm) * Math.SQRT2);
+
         if (isComplex) {
-          const complexSpectrum = calcComplexInputFFT(value1, value2),
-            ncSpectrum = useNC ? ncMethod(complexSpectrum, ncDistance) : [];
+          const complexSpectrum = calcComplexInputFFT(value1, value2);
+          const ncSpectrum = useNC ? ncMethod(complexSpectrum, ncDistance) : [];
           spectrum1 = new Array(complexSpectrum.length);
           spectrum2 = new Array(complexSpectrum.length);
           for (let i = 0; i < complexSpectrum.length; i++) {
             const j = complexSpectrum.length - i;
+
             spectrum1[i] = useNC
               ? ncSpectrum[idxWrapOver(i, ncSpectrum.length)]
               : complexSpectrum[idxWrapOver(i, complexSpectrum.length)].magnitude;
@@ -371,12 +270,12 @@ function visualize() {
           }
         } else {
           if (useNC) {
-            const temp1 = calcComplexFFT(value1),
-              temp2 = calcComplexFFT(value2);
+            const temp1 = calcComplexFFT(value1);
+            const temp2 = calcComplexFFT(value2);
             spectrum1 = ncMethod(temp1, ncDistance);
             spectrum2 = ncMethod(temp2, ncDistance);
           } else {
-            (spectrum1 = calcFFT(value1, true)), (spectrum2 = calcFFT(value2, true));
+            (spectrum1 = calcFFT(value1)), (spectrum2 = calcFFT(value2));
           }
         }
         ctx.fillStyle = color1;
@@ -386,6 +285,7 @@ function visualize() {
         ctx.strokeStyle = color2;
         if (!isSpectrogramOnly) drawSpectrum(spectrum2, fftData2.length, isSpectrumandSpectrogram);
       }
+
       if (visualizerSettings.channelMode === 'ms' || visualizerSettings.channelMode === 'both') {
         let value3 = fftData3.map((x) => ((x * fftData3.length) / norm) * Math.SQRT2),
           value4 = fftData4.map((x) => ((x * fftData4.length) / norm) * Math.SQRT2);
@@ -410,7 +310,7 @@ function visualize() {
             spectrum3 = ncMethod(temp1, ncDistance);
             spectrum4 = ncMethod(temp2, ncDistance);
           } else {
-            (spectrum3 = calcFFT(value3, true)), (spectrum4 = calcFFT(value4, true));
+            (spectrum3 = calcFFT(value3)), (spectrum4 = calcFFT(value4));
           }
         }
         ctx.fillStyle = color3;
@@ -427,13 +327,9 @@ function visualize() {
           calcComplexFFT(fftData.map((x) => ((x * fftData.length) / norm) * Math.SQRT2)),
           ncDistance
         );
-      else
-        spectrum0 = calcFFT(
-          fftData.map((x) => ((x * fftData.length) / norm) * Math.SQRT2),
-          true
-        );
+      else spectrum0 = calcFFT(fftData.map((x) => ((x * fftData.length) / norm) * Math.SQRT2));
       if (visualizerSettings.useGradient) {
-        const grad = ctx.createLinearGradient(0, 0, 0, canvas.height);
+        const grad = ctx.createLinearGradient(0, 0, 0, lienzo.height);
         grad.addColorStop(
           0,
           visualizerSettings.darkMode
@@ -445,7 +341,7 @@ function visualize() {
               : 'rgb(0, 102, 204)'
         );
         grad.addColorStop(
-          1 / (1 + isSpectrumandSpectrogram),
+          1 / (1 + +isSpectrumandSpectrogram),
           visualizerSettings.darkMode ? (visualizerSettings.alternateColor ? '#fff' : '#c0c0c0') : '#000'
         );
         ctx.fillStyle = grad;
@@ -461,20 +357,21 @@ function visualize() {
   /** INICIO PINTAR ESPECTROGRAMA */
   if (isSpectrogram) {
     ctx.globalCompositeOperation = 'source-over';
-    const isReversed = visualizerSettings.minFreq > visualizerSettings.maxFreq,
-      minRange = hertzToFFTBin(
-        visualizerSettings.minFreq,
-        isReversed ? 'ceil' : 'floor',
-        fftData.length,
-        audioCtx.sampleRate
-      ),
-      maxRange = hertzToFFTBin(
-        visualizerSettings.maxFreq,
-        isReversed ? 'floor' : 'ceil',
-        fftData.length,
-        audioCtx.sampleRate
-      ),
-      spectrogramBars = [];
+    const isReversed = visualizerSettings.minFreq > visualizerSettings.maxFreq;
+    const minRange = hertzToFFTBin(
+      visualizerSettings.minFreq,
+      isReversed ? 'ceil' : 'floor',
+      fftData.length,
+      audioCtx.sampleRate
+    );
+    const maxRange = hertzToFFTBin(
+      visualizerSettings.maxFreq,
+      isReversed ? 'floor' : 'ceil',
+      fftData.length,
+      audioCtx.sampleRate
+    );
+    const spectrogramBars: BarraEspectrograma[] = [];
+
     for (let i = Math.min(minRange, maxRange); i <= Math.max(minRange, maxRange); i++) {
       const lowerBound = map(
           fscale(
@@ -515,7 +412,7 @@ function visualize() {
         lastBin.hi = Math.max(lastBin.hi, i);
       }
     }
-    console.log(spectrogramBars, Math.min(...fftData), Math.max(...fftData));
+
     for (let i = 0; i < spectrogramBars.length; i++) {
       let value = 0,
         value1 = 0,
@@ -565,25 +462,29 @@ function visualize() {
               )
           );
       }
-      let color;
+
+      let color: TColor;
+
       const darkMode = visualizerSettings.darkMode;
+      const valOscuro = +darkMode;
+
       switch (visualizerSettings.channelMode) {
         case 'stereo':
         case 'ms':
         case 'both':
-          const mag1 = spectrum1 !== undefined ? ascale(value1, altAmplitude) : 0,
-            mag2 = spectrum2 !== undefined ? ascale(value2, altAmplitude) : 0,
-            mag3 = spectrum3 !== undefined ? ascale(value3, altAmplitude) : 0,
-            mag4 = spectrum4 !== undefined ? ascale(value4, altAmplitude) : 0,
-            sign = visualizerSettings.darkMode * 2 - 1,
-            isMSOnly = visualizerSettings.channelMode === 'ms',
-            isAlternate = visualizerSettings.alternateColor,
-            compliment1 = (isMSOnly && !isAlternate) || (!isMSOnly && isAlternate) ? mag3 : mag1,
-            compliment2 = (isMSOnly && !isAlternate) || (!isMSOnly && isAlternate) ? mag4 : mag2,
-            compliment3 = (isMSOnly && !isAlternate) || (!isMSOnly && isAlternate) ? mag1 : mag3,
-            compliment4 = (isMSOnly && !isAlternate) || (!isMSOnly && isAlternate) ? mag2 : mag4,
-            mathFunc = darkMode ? 'max' : 'min',
-            colors = [
+          const mag1 = spectrum1 !== undefined ? ascale(value1, altAmplitude) : 0;
+          const mag2 = spectrum2 !== undefined ? ascale(value2, altAmplitude) : 0;
+          const mag3 = spectrum3 !== undefined ? ascale(value3, altAmplitude) : 0;
+          const mag4 = spectrum4 !== undefined ? ascale(value4, altAmplitude) : 0;
+          const sign = visualizerSettings.darkMode * 2 - 1;
+          const isMSOnly = visualizerSettings.channelMode === 'ms';
+          const isAlternate = visualizerSettings.alternateColor;
+          const compliment1 = (isMSOnly && !isAlternate) || (!isMSOnly && isAlternate) ? mag3 : mag1;
+          const compliment2 = (isMSOnly && !isAlternate) || (!isMSOnly && isAlternate) ? mag4 : mag2;
+          const compliment3 = (isMSOnly && !isAlternate) || (!isMSOnly && isAlternate) ? mag1 : mag3;
+          const compliment4 = (isMSOnly && !isAlternate) || (!isMSOnly && isAlternate) ? mag2 : mag4;
+          const mathFunc = darkMode ? 'max' : 'min';
+          const colors = [
               {
                 r: 79,
                 g: 129,
@@ -605,8 +506,9 @@ function visualize() {
                 b: 162,
               },
             ],
-            background = 255 * !darkMode,
+            background = 255 * +!darkMode,
             colorFunc = (x, y) => map(x, 0, 1, background, y);
+
           color = calcRGB(
             Math[mathFunc](
               background,
@@ -633,7 +535,7 @@ function visualize() {
           break;
         default:
           const mag = ascale(value, altAmplitude),
-            bg = 32 * (!visualizerSettings.alternateColor && darkMode);
+            bg = 32 * +(!visualizerSettings.alternateColor && darkMode);
           if (visualizerSettings.useGradient) {
             // Color espectrograma
             const colors = [
@@ -650,7 +552,7 @@ function visualize() {
                   b: visualizerSettings.alternateColor ? 255 : 214,
                 },
               ],
-              foreground = (visualizerSettings.alternateColor ? 255 : 192) * darkMode,
+              foreground = (visualizerSettings.alternateColor ? 255 : 192) * valOscuro,
               halfway = mag > 0.5;
 
             color = calcRGB(
@@ -658,29 +560,29 @@ function visualize() {
                 mag,
                 halfway / 2,
                 halfway / 2 + 0.5,
-                halfway ? colors[darkMode * 1].r + bg : 255 * !darkMode + bg,
-                halfway ? foreground : colors[darkMode * 1].r + bg
+                halfway ? colors[valOscuro * 1].r + bg : 255 * +!darkMode + bg,
+                halfway ? foreground : colors[valOscuro * 1].r + bg
               ),
               map(
                 mag,
                 halfway / 2,
                 halfway / 2 + 0.5,
-                halfway ? colors[darkMode * 1].g + bg : 255 * !darkMode + bg,
-                halfway ? foreground : colors[darkMode * 1].g + bg
+                halfway ? colors[valOscuro * 1].g + bg : 255 * +!darkMode + bg,
+                halfway ? foreground : colors[valOscuro * 1].g + bg
               ),
               map(
                 mag,
                 halfway / 2,
                 halfway / 2 + 0.5,
-                halfway ? colors[darkMode * 1].b + bg : 255 * !darkMode + bg,
-                halfway ? foreground : colors[darkMode * 1].b + bg
+                halfway ? colors[valOscuro * 1].b + bg : 255 * +!darkMode + bg,
+                halfway ? foreground : colors[valOscuro * 1].b + bg
               )
             );
           } else
             color = calcRGB(
-              mag * 255 * (darkMode * 2 - 1) + 255 * !darkMode + bg,
-              mag * 255 * (darkMode * 2 - 1) + 255 * !darkMode + bg,
-              mag * 255 * (darkMode * 2 - 1) + 255 * !darkMode + bg
+              mag * 255 * (valOscuro * 2 - 1) + 255 * !darkMode + bg,
+              mag * 255 * (valOscuro * 2 - 1) + 255 * !darkMode + bg,
+              mag * 255 * (valOscuro * 2 - 1) + 255 * !darkMode + bg
             );
       }
       const r = color.r,
@@ -705,8 +607,8 @@ function visualize() {
     if (auxCanvas.width > 0 && auxCanvas.height > 0)
       auxCtx.drawImage(auxCanvas, -1 * isSpectrogramOnly, 1 * isSpectrumandSpectrogram);
     ctx.fillStyle = bgColor;
-    ctx.fillRect(canvas.width - auxCanvas.width, canvas.height - auxCanvas.height, auxCanvas.width, auxCanvas.height);
-    if (auxCanvas.width > 0 && auxCanvas.height > 0) ctx.drawImage(auxCanvas, 0, canvas.height - auxCanvas.height);
+    ctx.fillRect(lienzo.width - auxCanvas.width, lienzo.height - auxCanvas.height, auxCanvas.width, auxCanvas.height);
+    if (auxCanvas.width > 0 && auxCanvas.height > 0) ctx.drawImage(auxCanvas, 0, lienzo.height - auxCanvas.height);
   }
   /** FIN PINTAR ESPECTROGRAMA */
 
@@ -754,18 +656,18 @@ function visualize() {
           fscale(x, visualizerSettings.fscale, visualizerSettings.hzLinearFactor / 100),
           fscale(visualizerSettings.minFreq, visualizerSettings.fscale, visualizerSettings.hzLinearFactor / 100),
           fscale(visualizerSettings.maxFreq, visualizerSettings.fscale, visualizerSettings.hzLinearFactor / 100),
-          canvas.height * isSpectrogramOnly,
-          canvas.width * !isSpectrogramOnly
+          lienzo.height * isSpectrogramOnly,
+          lienzo.width * !isSpectrogramOnly
         );
 
       ctx.beginPath();
       ctx.lineTo(
-        isSpectrogramOnly ? canvas.width * visualizerSettings.mirrorLabels : posX,
-        isSpectrogramOnly ? posX : canvas.height / (1 + isSpectrumandSpectrogram)
+        isSpectrogramOnly ? lienzo.width * visualizerSettings.mirrorLabels : posX,
+        isSpectrogramOnly ? posX : lienzo.height / (1 + isSpectrumandSpectrogram)
       );
       ctx.lineTo(
         isSpectrogramOnly
-          ? canvas.width * visualizerSettings.mirrorLabels +
+          ? lienzo.width * visualizerSettings.mirrorLabels +
               10 * devicePixelRatio * (1 - visualizerSettings.mirrorLabels * 2)
           : posX,
         isSpectrogramOnly ? posX : 0
@@ -775,8 +677,8 @@ function visualize() {
       ctx.globalAlpha = 1;
       ctx.fillText(
         label,
-        posX * !isSpectrogramOnly + isSpectrogramOnly * canvas.width * visualizerSettings.mirrorLabels,
-        isSpectrogramOnly ? posX : canvas.height / (1 + isSpectrumandSpectrogram)
+        posX * !isSpectrogramOnly + isSpectrogramOnly * lienzo.width * visualizerSettings.mirrorLabels,
+        isSpectrogramOnly ? posX : lienzo.height / (1 + isSpectrumandSpectrogram)
       );
     });
     ctx.setLineDash([]);
@@ -802,15 +704,15 @@ function visualize() {
     dBLabelData.map((x) => {
       ctx.globalAlpha = 0.5;
       const label = `${x}dB`,
-        posY = map(ascale(10 ** (x / 20)), 0, 1, canvas.height / (1 + isSpectrumandSpectrogram), 0);
-      if (posY <= canvas.height / 2 || !isSpectrumandSpectrogram) {
+        posY = map(ascale(10 ** (x / 20)), 0, 1, lienzo.height / (1 + isSpectrumandSpectrogram), 0);
+      if (posY <= lienzo.height / 2 || !isSpectrumandSpectrogram) {
         ctx.beginPath();
         ctx.lineTo(0, posY);
-        ctx.lineTo(canvas.width, posY);
+        ctx.lineTo(lienzo.width, posY);
         ctx.stroke();
         ctx.globalAlpha = 1;
         ctx.textAlign = visualizerSettings.mirrorLabels ? 'end' : 'start';
-        ctx.fillText(label, canvas.width * visualizerSettings.mirrorLabels, posY);
+        ctx.fillText(label, lienzo.width * visualizerSettings.mirrorLabels, posY);
       }
     });
     ctx.setLineDash([]);
@@ -1032,8 +934,10 @@ function drawSpectrum(spectrum, length, half = false) {
     isFlipped = visualizerSettings.minFreq > visualizerSettings.maxFreq,
     minIdx = hertzToFFTBin(visualizerSettings.minFreq, isFlipped ? 'ceil' : 'floor', length, audioCtx.sampleRate),
     maxIdx = hertzToFFTBin(visualizerSettings.maxFreq, isFlipped ? 'floor' : 'ceil', length, audioCtx.sampleRate);
+
   if (visualizerSettings.useBars) {
-    const spectrogramBars = [];
+    const spectrogramBars: BarraEspectrograma[] = [];
+
     for (let i = Math.min(minIdx, maxIdx); i <= Math.max(minIdx, maxIdx); i++) {
       const lowerBound = map(
           fscale(
@@ -1057,7 +961,7 @@ function drawSpectrum(spectrum, length, half = false) {
           0,
           1
         ),
-        size = canvas.width,
+        size = lienzo.width,
         lowerVisible = clamp(Math.round(lowerBound * size), 0, size),
         higherVisible = clamp(Math.round(higherBound * size), 0, size);
 
@@ -1086,10 +990,10 @@ function drawSpectrum(spectrum, length, half = false) {
         );
       }
       const x = spectrogramBars[i].start,
-        y = canvas.height / (1 + half),
+        y = lienzo.height / (1 + half),
         delta = spectrogramBars[i].end - spectrogramBars[i].start,
         w = Math[delta < 0 ? 'min' : 'max'](Math.sign(delta), delta - Math.sign(delta)),
-        h = (-ascale(mag) * canvas.height) / (1 + half);
+        h = (-ascale(mag) * lienzo.height) / (1 + half);
       ctx.globalAlpha = visualizerSettings.drawMode === 'both' ? 0.5 : 1;
       if (isFill) ctx.fillRect(x, y, w, h);
       ctx.globalAlpha = 1;
@@ -1098,10 +1002,10 @@ function drawSpectrum(spectrum, length, half = false) {
   } else {
     ctx.beginPath();
     if (isFill) {
-      ctx.lineTo(canvas.width * isFlipped, canvas.height);
+      ctx.lineTo(lienzo.width * isFlipped, lienzo.height);
     }
     ctx.lineTo(
-      canvas.width * isFlipped,
+      lienzo.width * isFlipped,
       map(
         ascale(
           spectrum[idxWrapOver(minIdx, spectrum.length)] *
@@ -1111,7 +1015,7 @@ function drawSpectrum(spectrum, length, half = false) {
         ),
         0,
         1,
-        canvas.height / (1 + half),
+        lienzo.height / (1 + half),
         0
       )
     );
@@ -1126,7 +1030,7 @@ function drawSpectrum(spectrum, length, half = false) {
           fscale(visualizerSettings.minFreq, visualizerSettings.fscale, visualizerSettings.hzLinearFactor / 100),
           fscale(visualizerSettings.maxFreq, visualizerSettings.fscale, visualizerSettings.hzLinearFactor / 100),
           0,
-          canvas.width
+          lienzo.width
         ),
         map(
           ascale(
@@ -1137,13 +1041,13 @@ function drawSpectrum(spectrum, length, half = false) {
           ),
           0,
           1,
-          canvas.height / (1 + half),
+          lienzo.height / (1 + half),
           0
         )
       );
     }
     ctx.lineTo(
-      canvas.width * (1 - isFlipped),
+      lienzo.width * (1 - isFlipped),
       map(
         ascale(
           spectrum[idxWrapOver(maxIdx, spectrum.length)] *
@@ -1153,12 +1057,12 @@ function drawSpectrum(spectrum, length, half = false) {
         ),
         0,
         1,
-        canvas.height / (1 + half),
+        lienzo.height / (1 + half),
         0
       )
     );
     if (isFill) {
-      ctx.lineTo(canvas.width * (1 - isFlipped), canvas.height);
+      ctx.lineTo(lienzo.width * (1 - isFlipped), lienzo.height);
     }
     ctx.globalAlpha = visualizerSettings.drawMode === 'both' ? 0.5 : 1;
     if (isFill) ctx.fill();
@@ -1233,18 +1137,4 @@ function weightSpectrumAtFreq(x) {
     ) *
     applyWeight(x, visualizerSettings.weightingAmount / 100, visualizerSettings.weightingType)
   );
-}
-
-// NC method
-function ncMethod(fftData, distance = 1) {
-  const magnitudeData = [],
-    offset = Math.trunc(distance / 2);
-  for (let i = 0; i < fftData.length; i++) {
-    const cosL = fftData[idxWrapOver(i - offset, fftData.length)].re,
-      sinL = fftData[idxWrapOver(i - offset, fftData.length)].im,
-      cosR = fftData[idxWrapOver(i - offset + distance, fftData.length)].re,
-      sinR = fftData[idxWrapOver(i - offset + distance, fftData.length)].im;
-    magnitudeData[i] = Math.sqrt(Math.max(0, -(cosL * cosR) - sinL * sinR));
-  }
-  return magnitudeData;
 }

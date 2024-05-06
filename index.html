@@ -35,9 +35,11 @@
     <!-- <meta name="twitter:image:alt" content="Texto que describe la imagen" /> -->
   </head>
   <body>
-    <div id="container"><canvas id="canvas"></canvas></div>
-    <audio id="audio" controls crossorigin></audio>
-    <input id="audioFileInput" type="file" accept="audio/*" />
+    <div id="contenedor">
+      <canvas id="lienzo"></canvas>
+    </div>
+    <audio id="reproductor" controls crossorigin></audio>
+    <input id="cargarAudio" type="file" accept="audio/*" />
     <script src="https://cdnjs.cloudflare.com/ajax/libs/dat-gui/0.7.9/dat.gui.min.js"></script>
     <script type="module" src="/src/programa.ts"></script>
   </body>
