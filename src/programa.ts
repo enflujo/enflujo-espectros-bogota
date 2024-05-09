@@ -1,5 +1,6 @@
 import './scss/estilos.scss';
 import * as dat from 'dat.gui';
+import Meyda from 'meyda';
 
 import {
   ascale,
@@ -8,6 +9,7 @@ import {
   calcFFT,
   calcRGB,
   clamp,
+  crearAnalizadorMeyda,
   fftBinToHertz,
   generateOctaveBands,
   hertzToFFTBin,
@@ -43,7 +45,10 @@ function loadLocalFile(evento: Event) {
   const auxCanvas = new OffscreenCanvas(0, 0);
   const auxCtx = auxCanvas.getContext('2d');
   // audio part
-  const audioSource = audioCtx.createMediaElementSource(reproductor);
+  const fuenteAudio = audioCtx.createMediaElementSource(reproductor);
+
+  // Crear analizador Meyda
+  crearAnalizadorMeyda(audioCtx, fuenteAudio);
 
   /* Analyser: a node able to provide real-time frequency and time-domain analysis information. 
    It is an AudioNode that passes the audio stream unchanged from the input to the output, 
@@ -69,11 +74,11 @@ function loadLocalFile(evento: Event) {
   const delay = audioCtx.createDelay();
   const splitter = audioCtx.createChannelSplitter(2); // only work well for stereo signal, not sure how it works on the surround sound
 
-  audioSource.connect(delay);
+  fuenteAudio.connect(delay);
   delay.connect(audioCtx.destination);
-  //audioSource.connect(audioCtx.destination);
-  audioSource.connect(analizador);
-  audioSource.connect(splitter);
+  //fuenteAudio.connect(audioCtx.destination);
+  fuenteAudio.connect(analizador);
+  fuenteAudio.connect(splitter);
   splitter.connect(analyserL, 0);
   splitter.connect(analyserR, 1);
 
@@ -205,19 +210,19 @@ function loadLocalFile(evento: Event) {
     let spectrum4: number[] = [];
 
     for (let i = 0; i < visualizerSettings.inputSize; i++) {
-      const x = map(i, 0, visualizerSettings.inputSize, -1, 1),
-        w = applyWindow(
-          x,
-          visualizerSettings.windowFunction,
-          visualizerSettings.windowParameter,
-          true,
-          visualizerSettings.windowSkew
-        ),
-        magnitude = dataArray[i + analizador.fftSize - visualizerSettings.inputSize],
-        l = dataArrayL[i + analyserL.fftSize - visualizerSettings.inputSize],
-        r = dataArrayR[i + analyserR.fftSize - visualizerSettings.inputSize],
-        m = (l + r) / 2,
-        s = (l - r) / 2;
+      const x = map(i, 0, visualizerSettings.inputSize, -1, 1);
+      const w = applyWindow(
+        x,
+        visualizerSettings.windowFunction,
+        visualizerSettings.windowParameter,
+        true,
+        visualizerSettings.windowSkew
+      );
+      const magnitude = dataArray[i + analizador.fftSize - visualizerSettings.inputSize];
+      const l = dataArrayL[i + analyserL.fftSize - visualizerSettings.inputSize];
+      const r = dataArrayR[i + analyserR.fftSize - visualizerSettings.inputSize];
+      const m = (l + r) / 2;
+      const s = (l - r) / 2;
       norm += w;
       fftData[idxWrapOver(i, fftData.length)] += magnitude * w;
       fftData1[idxWrapOver(i, fftData1.length)] += l * w;
@@ -264,12 +269,12 @@ function loadLocalFile(evento: Event) {
       case 'stereo':
       case 'ms':
       case 'both':
-        const isAlternate = visualizerSettings.alternateColor,
-          color1 = isAlternate ? cM : cL,
-          color2 = isAlternate ? cS : cR,
-          color3 = visualizerSettings.channelMode === 'ms' ? color1 : isAlternate ? cL : cM,
-          color4 = visualizerSettings.channelMode === 'ms' ? color2 : isAlternate ? cR : cS,
-          isComplex = visualizerSettings.treatAsComplex;
+        const isAlternate = visualizerSettings.alternateColor;
+        const color1 = isAlternate ? cM : cL;
+        const color2 = isAlternate ? cS : cR;
+        const color3 = visualizerSettings.channelMode === 'ms' ? color1 : isAlternate ? cL : cM;
+        const color4 = visualizerSettings.channelMode === 'ms' ? color2 : isAlternate ? cR : cS;
+        const isComplex = visualizerSettings.treatAsComplex;
         ctx.globalCompositeOperation = visualizerSettings.darkMode ? 'lighten' : 'darken';
 
         if (visualizerSettings.channelMode === 'stereo' || visualizerSettings.channelMode === 'both') {
@@ -439,11 +444,11 @@ function loadLocalFile(evento: Event) {
       }
 
       for (let i = 0; i < spectrogramBars.length; i++) {
-        let value = 0,
-          value1 = 0,
-          value2 = 0,
-          value3 = 0,
-          value4 = 0;
+        let value = 0;
+        let value1 = 0;
+        let value2 = 0;
+        let value3 = 0;
+        let value4 = 0;
         for (let idx = spectrogramBars[i].lo; idx <= spectrogramBars[i].hi; idx++) {
           const binIdx = idxWrapOver(idx, fftData.length);
           if (spectrum0.length)

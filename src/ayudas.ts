@@ -1,3 +1,4 @@
+import Meyda from 'meyda';
 import { visualizerSettings } from './constantes';
 import type { FFTComplejo, TBandas } from './tipos';
 
@@ -390,4 +391,50 @@ export function ascale(x: number, alt = false) {
       0,
       1
     );
+}
+
+export function crearAnalizadorMeyda(contexto, fuente) {
+  // console.log(analizar);
+  // const { ctx, fuente } = analizar;
+
+  let datosAnalizador;
+  let analizadorMeyda;
+  if (typeof Meyda === 'undefined') {
+    console.log('No se encuentra Meyda.');
+  } else {
+    analizadorMeyda = Meyda.createMeydaAnalyzer({
+      audioContext: contexto,
+      source: fuente,
+      bufferSize: 1024,
+      sampleRate: 44100,
+      featureExtractors: ['rms', 'amplitudeSpectrum', 'zcr', 'spectralCentroid', 'spectralSpread', 'amplitudeSpectrum'],
+      callback: revisarEstados,
+    });
+
+    const tamañoBuffer = analizadorMeyda.buffersize;
+
+    analizadorMeyda.start();
+    return Object.assign({ contexto, fuente }, { analizadorMeyda, datosAnalizador, bufferSize: 1024 });
+  }
+
+  // console.log(datosAnalizador);
+}
+
+export function revisarEstados(features) {
+  const { spectralCentroid, amplitudeSpectrum } = features;
+  if (amplitudeSpectrum[93] > 5 && amplitudeSpectrum[27] < 7 && amplitudeSpectrum[17] < 9) {
+    console.log('pajarito', amplitudeSpectrum);
+  } else {
+  }
+}
+
+export function encontrarBins(frecuencia: number) {
+  let bins: number[] = [];
+  for (let i: number = 0; i <= 512; i++) {
+    bins.push(i * 43 + 20);
+  }
+  console.log(bins);
+
+  const i = bins.findIndex((f) => f > frecuencia);
+  console.log(i);
 }
