@@ -421,10 +421,15 @@ export function crearAnalizadorMeyda(contexto, fuente) {
 }
 
 export function revisarEstados(features) {
+  const texto = document.getElementById('texto');
+  if (!texto) return;
   const { spectralCentroid, amplitudeSpectrum } = features;
   if (amplitudeSpectrum[93] > 5 && amplitudeSpectrum[27] < 7 && amplitudeSpectrum[17] < 9) {
     console.log('pajarito', amplitudeSpectrum);
+    texto.style.left = `${Math.random() * 300}`;
+    texto.innerText = 'pajarito';
   } else {
+    //texto.innerText = '';
   }
 }
 
