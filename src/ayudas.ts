@@ -407,7 +407,7 @@ export function crearAnalizadorMeyda(contexto, fuente) {
       source: fuente,
       bufferSize: 1024,
       sampleRate: 44100,
-      featureExtractors: ['rms', 'amplitudeSpectrum', 'zcr', 'spectralCentroid', 'spectralSpread', 'amplitudeSpectrum'],
+      featureExtractors: ['amplitudeSpectrum', 'zcr', 'spectralSpread', 'spectralSkewness'],
       callback: revisarEstados,
     });
 
@@ -421,16 +421,9 @@ export function crearAnalizadorMeyda(contexto, fuente) {
 }
 
 export function revisarEstados(features) {
-  const texto = document.getElementById('texto');
-  if (!texto) return;
-  const { spectralCentroid, amplitudeSpectrum } = features;
-  if (amplitudeSpectrum[93] > 5 && amplitudeSpectrum[27] < 7 && amplitudeSpectrum[17] < 9) {
-    console.log('pajarito', amplitudeSpectrum);
-    texto.style.left = `${Math.random() * 300}`;
-    texto.innerText = 'pajarito';
-  } else {
-    //texto.innerText = '';
-  }
+  const { amplitudeSpectrum, zcr, spectralSpread, spectralSkewness } = features;
+  const caracteristicas = { amplitudeSpectrum, zcr, spectralSpread, spectralSkewness };
+  mostrarImagen('pajaros', 4000, features);
 }
 
 export function encontrarBins(frecuencia: number) {
@@ -438,8 +431,44 @@ export function encontrarBins(frecuencia: number) {
   for (let i: number = 0; i <= 512; i++) {
     bins.push(i * 43 + 20);
   }
-  console.log(bins);
-
   const i = bins.findIndex((f) => f > frecuencia);
-  console.log(i);
+  return i;
+}
+
+function mostrarImagen(imagenes: string, frecuencia: number, caracteristicasAudio) {
+  let bin = encontrarBins(frecuencia);
+  const contenedorImagenes = document.getElementById(`${imagenes}`) as HTMLDivElement;
+
+  const identificarCopeton =
+    caracteristicasAudio.amplitudeSpectrum[bin] > 5 &&
+    caracteristicasAudio.amplitudeSpectrum[78] < 3 &&
+    caracteristicasAudio.amplitudeSpectrum[27] < 7 &&
+    caracteristicasAudio.zcr > 170;
+
+  const identificarTingua =
+    caracteristicasAudio.amplitudeSpectrum[bin] > 5 &&
+    caracteristicasAudio.amplitudeSpectrum[78] < 3 &&
+    caracteristicasAudio.amplitudeSpectrum[27] < 7 &&
+    caracteristicasAudio.zcr < 170;
+
+  if (identificarCopeton) {
+    //console.log('copetón', caracteristicasAudio.amplitudeSpectrum);
+    const imagen = document.createElement('img');
+    imagen.classList.add('imagen');
+    imagen.style.right = `${(bin * 100) / 512 + numeroAleatorio(-5, 5)}vw`; //`${Math.random() * 10 + 65}vw`;
+    imagen.style.top = `${caracteristicasAudio.amplitudeSpectrum[bin]}vh`;
+    imagen.src = '../estaticos/copeton.PNG';
+
+    contenedorImagenes.appendChild(imagen);
+
+    setTimeout(() => {
+      // texto.innerText = '';
+    }, 500);
+  } else if (identificarTingua) {
+    console.log('tingua');
+  }
+}
+
+function numeroAleatorio(min, max) {
+  return Math.floor(Math.random() * (max - min + 1) + min);
 }

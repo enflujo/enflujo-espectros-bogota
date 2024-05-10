@@ -242,17 +242,17 @@ function loadLocalFile(evento: Event) {
         ? !visualizerSettings.alternateColor && isMono
           ? '#202020'
           : '#000'
-        : '#ffff00',
+        : '#ffffff',
       // Color líneas espectro
       fgColor = visualizerSettings.darkMode
         ? !visualizerSettings.alternateColor && isMono
           ? '#c0c0c0'
           : '#fff'
-        : '#ff00ff',
+        : '#222222',
       cL = 'rgb(79, 0, 0)',
       cR = 'rgb(192, 0, 7)',
       cM = 'rgb(155, 0, 0)',
-      cS = 'rgb(128, 0, 162)',
+      cS = 'rgb(128, 0, 0)',
       isSpectrogramOnly = visualizerSettings.display === 'spectrogram',
       isSpectrogram = visualizerSettings.display === 'spectrogram' || visualizerSettings.display === 'both',
       isSpectrumandSpectrogram = visualizerSettings.display === 'both',
@@ -376,7 +376,7 @@ function loadLocalFile(evento: Event) {
           ctx.strokeStyle = grad;
         } else {
           // Color de forma de onda en Spectrum
-          ctx.fillStyle = fgColor;
+          ctx.fillStyle = 'pink';
           ctx.strokeStyle = fgColor;
         }
         if (!isSpectrogramOnly) drawSpectrum(spectrum0, fftData.length, isSpectrumandSpectrogram);
@@ -887,11 +887,11 @@ function loadLocalFile(evento: Event) {
   function drawSpectrum(spectrum: number[], length: number, half = false) {
     if (!ctx) return;
     // Spectrum (FFT) visualization part
-    const isFill = visualizerSettings.drawMode === 'fill' || visualizerSettings.drawMode === 'both',
-      isStroke = visualizerSettings.drawMode === 'stroke' || visualizerSettings.drawMode === 'both',
-      isFlipped = visualizerSettings.minFreq > visualizerSettings.maxFreq,
-      minIdx = hertzToFFTBin(visualizerSettings.minFreq, isFlipped ? 'ceil' : 'floor', length, audioCtx.sampleRate),
-      maxIdx = hertzToFFTBin(visualizerSettings.maxFreq, isFlipped ? 'floor' : 'ceil', length, audioCtx.sampleRate);
+    const isFill = visualizerSettings.drawMode === 'fill' || visualizerSettings.drawMode === 'both';
+    const isStroke = visualizerSettings.drawMode === 'stroke' || visualizerSettings.drawMode === 'both';
+    const isFlipped = visualizerSettings.minFreq > visualizerSettings.maxFreq;
+    const minIdx = hertzToFFTBin(visualizerSettings.minFreq, isFlipped ? 'ceil' : 'floor', length, audioCtx.sampleRate);
+    const maxIdx = hertzToFFTBin(visualizerSettings.maxFreq, isFlipped ? 'floor' : 'ceil', length, audioCtx.sampleRate);
 
     if (visualizerSettings.useBars) {
       const spectrogramBars: BarraEspectrograma[] = [];
