@@ -393,6 +393,136 @@ export function ascale(x: number, alt = false) {
     );
 }
 
+export function applyWindow(posX: number, windowType = 'Hann', windowParameter = 1, truncate = true, windowSkew = 0) {
+  let x =
+    windowSkew > 0
+      ? ((posX / 2 - 0.5) / (1 - (posX / 2 - 0.5) * 10 * windowSkew ** 2) / (1 / (1 + 10 * windowSkew ** 2))) * 2 + 1
+      : ((posX / 2 + 0.5) / (1 + (posX / 2 + 0.5) * 10 * windowSkew ** 2) / (1 / (1 + 10 * windowSkew ** 2))) * 2 - 1;
+
+  if (truncate && Math.abs(x) > 1) return 0;
+
+  switch (windowType.toLowerCase()) {
+    default:
+      return 1;
+    case 'hanning':
+    case 'cosine squared':
+    case 'hann':
+      return Math.cos((x * Math.PI) / 2) ** 2;
+    case 'raised cosine':
+    case 'hamming':
+      return 0.54 + 0.46 * Math.cos(x * Math.PI);
+    case 'power of sine':
+      return Math.cos((x * Math.PI) / 2) ** windowParameter;
+    case 'circle':
+    case 'power of circle':
+      return Math.sqrt(1 - x ** 2) ** windowParameter;
+    case 'tapered cosine':
+    case 'tukey':
+      return Math.abs(x) <= 1 - windowParameter
+        ? 1
+        : x > 0
+          ? (-Math.sin(((x - 1) * Math.PI) / windowParameter / 2)) ** 2
+          : Math.sin(((x + 1) * Math.PI) / windowParameter / 2) ** 2;
+    case 'blackman':
+      return 0.42 + 0.5 * Math.cos(x * Math.PI) + 0.08 * Math.cos(x * Math.PI * 2);
+    case 'nuttall':
+      return (
+        0.355768 +
+        0.487396 * Math.cos(x * Math.PI) +
+        0.144232 * Math.cos(2 * x * Math.PI) +
+        0.012604 * Math.cos(3 * x * Math.PI)
+      );
+    case 'flat top':
+    case 'flattop':
+      return (
+        0.21557895 +
+        0.41663158 * Math.cos(x * Math.PI) +
+        0.277263158 * Math.cos(2 * x * Math.PI) +
+        0.083578947 * Math.cos(3 * x * Math.PI) +
+        0.006947368 * Math.cos(4 * x * Math.PI)
+      );
+    case 'kaiser':
+      return Math.cosh(Math.sqrt(1 - x ** 2) * windowParameter ** 2) / Math.cosh(windowParameter ** 2);
+    case 'gauss':
+    case 'gaussian':
+      return Math.exp(-(windowParameter ** 2) * x ** 2);
+    case 'cosh':
+    case 'hyperbolic cosine':
+      return Math.E ** (-(windowParameter ** 2) * (Math.cosh(x) - 1));
+    case 'cosh 2':
+    case 'hyperbolic cosine 2':
+      return Math.E ** -(Math.cosh(x * windowParameter) - 1);
+    case 'bartlett':
+    case 'triangle':
+    case 'triangular':
+      return 1 - Math.abs(x);
+    case 'poisson':
+    case 'exponential':
+      return Math.exp(-Math.abs(x * windowParameter ** 2));
+    case 'hyperbolic secant':
+    case 'sech':
+      return 1 / Math.cosh(x * windowParameter ** 2);
+    case 'quadratic spline':
+      return Math.abs(x) <= 0.5 ? -((x * Math.sqrt(2)) ** 2) + 1 : (Math.abs(x * Math.sqrt(2)) - Math.sqrt(2)) ** 2;
+    case 'parzen':
+      return Math.abs(x) > 0.5
+        ? -2 * (-1 + Math.abs(x)) ** 3
+        : 1 - 24 * Math.abs(x / 2) ** 2 + 48 * Math.abs(x / 2) ** 3;
+    case 'welch':
+      return (1 - x ** 2) ** windowParameter;
+    case 'ogg':
+    case 'vorbis':
+      return Math.sin((Math.PI / 2) * Math.cos((x * Math.PI) / 2) ** 2);
+    case 'cascaded sine':
+    case 'cascaded cosine':
+    case 'cascaded sin':
+    case 'cascaded cos':
+      return 1 - Math.sin((Math.PI / 2) * Math.sin((x * Math.PI) / 2) ** 2);
+    case 'galss':
+      return (
+        (((1 - 1 / (x + 2)) * (1 - 1 / (-x + 2)) * 4) ** 2 *
+          -(Math.tanh(Math.SQRT2 * (-x + 1)) * Math.tanh(Math.SQRT2 * (-x - 1)))) /
+        Math.tanh(Math.SQRT2) ** 2
+      );
+  }
+}
+
+export function fscale(x: number, freqScale = 'logarithmic', freqSkew = 0.5) {
+  switch (freqScale.toLowerCase()) {
+    default:
+      return x;
+    case 'log':
+    case 'logarithmic':
+      return Math.log2(x);
+    case 'mel':
+      return Math.log2(1 + x / 700);
+    case 'critical bands':
+    case 'bark':
+      return (26.81 * x) / (1960 + x) - 0.53;
+    case 'equivalent rectangular bandwidth':
+    case 'erb':
+      return Math.log2(1 + 0.00437 * x);
+    case 'cam':
+    case 'cams':
+      return Math.log2((x / 1000 + 0.312) / (x / 1000 + 14.675));
+    case 'sinh':
+    case 'arcsinh':
+    case 'asinh':
+      return Math.asinh(x / 10 ** (freqSkew * 4));
+    case 'shifted log':
+    case 'shifted logarithmic':
+      return Math.log2(10 ** (freqSkew * 4) + x);
+    case 'nth root':
+      return x ** (1 / (11 - freqSkew * 10));
+    case 'negative exponential':
+      return -(2 ** (-x / 2 ** (7 + freqSkew * 8)));
+    case 'adjustable bark':
+      return (26.81 * x) / (10 ** (freqSkew * 4) + x);
+    case 'period':
+      return 1 / x;
+  }
+}
+
 export function crearAnalizadorMeyda(contexto, fuente) {
   // console.log(analizar);
   // const { ctx, fuente } = analizar;
@@ -457,7 +587,7 @@ function mostrarImagen(imagenes: string, frecuencia: number, caracteristicasAudi
     imagen.classList.add('imagen');
     imagen.style.right = `${(bin * 100) / 512 + numeroAleatorio(-5, 5)}vw`; //`${Math.random() * 10 + 65}vw`;
     imagen.style.top = `${caracteristicasAudio.amplitudeSpectrum[bin]}vh`;
-    imagen.src = '../estaticos/copeton.PNG';
+    imagen.src = '../copeton.PNG';
 
     contenedorImagenes.appendChild(imagen);
 

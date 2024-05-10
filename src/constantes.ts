@@ -45,11 +45,11 @@ export const visualizerSettings = {
   labelTuning: 440,
   useGradient: false,
   alternateColor: false,
-  drawMode: 'stroke',
+  drawMode: 'both',
   useBars: false,
   darkMode: false,
   compensateDelay: false,
-  display: 'spectrum',
+  display: 'both',
 };
 
 export const drawModes = {
