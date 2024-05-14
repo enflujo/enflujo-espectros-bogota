@@ -7,13 +7,14 @@ import {
   calcFFT,
   calcRGB,
   clamp,
-  crearAnalizadorMeyda,
+  encontrarBins,
   fftBinToHertz,
   fscale,
   hertzToFFTBin,
   idxWrapOver,
   map,
   ncMethod,
+  numeroAleatorio,
   weightSpectrumAtFreq,
 } from './ayudas';
 
@@ -21,6 +22,8 @@ import { visualizerSettings } from './constantes';
 import { BarraEspectrograma } from './tipos';
 import gui from './gui';
 import pintarGrilla from './pintarGrilla';
+import { Punto } from './tranformacion/Punto';
+import Meyda, { MeydaFeaturesObject } from 'meyda';
 
 const contenedor = document.getElementById('contenedor') as HTMLDivElement;
 const reproductor = document.getElementById('reproductor') as HTMLAudioElement;
@@ -28,11 +31,13 @@ const cargarAudio = document.getElementById('cargarAudio') as HTMLInputElement;
 const lienzo = document.getElementById('lienzo') as HTMLCanvasElement;
 const ctx = lienzo.getContext('2d') as CanvasRenderingContext2D;
 const lienzoInvisible = new OffscreenCanvas(0, 0);
-const ctx2 = lienzoInvisible.getContext('2d');
+const ctx2 = lienzoInvisible.getContext('2d') as OffscreenCanvasRenderingContext2D;
 const botonesSonidos = document.querySelectorAll<HTMLLIElement>('.botonSonido');
 const fftData: number[] = new Array(visualizerSettings.fftSize).fill(0);
+const centro = { x: window.innerWidth / 2, y: window.innerHeight / 2 };
 const verGrilla = false; // para que pinte o no la grilla
 let contextoAudioCreado = false;
+let reloj = 0;
 
 /**
  * Colores
@@ -45,76 +50,153 @@ addEventListener('resize', escalar);
 
 // gui();
 
-function iniciarViaje(audioCtx: AudioContext, analizador: AnalyserNode, datos: Float32Array) {
-  const min2 = fscale(visualizerSettings.minFreq, visualizerSettings.fscale, visualizerSettings.hzLinearFactor / 100);
-  const max2 = fscale(visualizerSettings.maxFreq, visualizerSettings.fscale, visualizerSettings.hzLinearFactor / 100);
-  const isReversed = visualizerSettings.minFreq > visualizerSettings.maxFreq;
-  const minRange = hertzToFFTBin(
-    visualizerSettings.minFreq,
-    isReversed ? 'ceil' : 'floor',
-    fftData.length,
-    audioCtx.sampleRate
-  );
-  const maxRange = hertzToFFTBin(
-    visualizerSettings.maxFreq,
-    isReversed ? 'floor' : 'ceil',
-    fftData.length,
-    audioCtx.sampleRate
-  );
+function crearAnalizadorMeyda(contexto: AudioContext, fuente: MediaElementAudioSourceNode) {
+  const analizadorMeyda = Meyda.createMeydaAnalyzer({
+    audioContext: contexto,
+    source: fuente,
+    bufferSize: 1024,
+    sampleRate: 44100,
+    featureExtractors: ['amplitudeSpectrum', 'zcr'],
+    callback: revisarEstados,
+  });
 
-  const ncDistance = visualizerSettings.ncDistance;
-  const useNC = true; // ¿? Parece que tiene "más" resolución el espectrograma cuando esto es `true`
-  const altAmplitude = visualizerSettings.decoupleAmplitudeFromSpectrum;
-  const minIdx = hertzToFFTBin(visualizerSettings.minFreq, 'floor', fftData.length, audioCtx.sampleRate);
-  const maxIdx = hertzToFFTBin(visualizerSettings.maxFreq, 'ceil', fftData.length, audioCtx.sampleRate);
-  const min = Math.min(minIdx, maxIdx);
-  const max = Math.max(minIdx, maxIdx);
+  analizadorMeyda.start();
+}
+
+export function revisarEstados(caracteristicas: MeydaFeaturesObject) {
+  const bin = encontrarBins(4000);
+  const contenedorImagenes = document.getElementById('pajaros') as HTMLDivElement;
+  const { amplitudeSpectrum, complexSpectrum, chroma, zcr } = caracteristicas;
+  const identificarCopeton =
+    amplitudeSpectrum[bin] > 5 && amplitudeSpectrum[78] < 3 && amplitudeSpectrum[27] < 7 && zcr > 170;
+
+  const identificarTingua =
+    amplitudeSpectrum[bin] > 5 && amplitudeSpectrum[78] < 3 && amplitudeSpectrum[27] < 7 && zcr < 170;
+  // console.log(amplitudeSpectrum);
+  if (identificarCopeton) {
+    //console.log('copetón', caracteristicasAudio.amplitudeSpectrum);
+    const imagen = document.createElement('img');
+    imagen.classList.add('imagen');
+    imagen.style.right = `${(bin * 100) / 512 + numeroAleatorio(-5, 5)}vw`; //`${Math.random() * 10 + 65}vw`;
+    imagen.style.top = `${amplitudeSpectrum[bin]}vh`;
+    imagen.src = '../copeton.PNG';
+
+    contenedorImagenes.appendChild(imagen);
+  } else if (identificarTingua) {
+    console.log('tingua');
+  }
+}
+
+function iniciarViaje(audioCtx: AudioContext, analizador: AnalyserNode, datos: Float32Array) {
+  const { minFreq, maxFreq, inputSize, ncDistance } = visualizerSettings;
+  const min2 = fscale(minFreq, visualizerSettings.fscale, 0);
+  const max2 = fscale(maxFreq, visualizerSettings.fscale, 0);
+  const minRange = hertzToFFTBin(minFreq, 'floor', fftData.length, audioCtx.sampleRate);
+  const maxRange = hertzToFFTBin(maxFreq, 'ceil', fftData.length, audioCtx.sampleRate);
+  const useNC = false; // ¿? Parece que tiene "más" resolución el espectrograma cuando esto es `true`, pero se ven mejor los colores en `false`
+  const minIdx = hertzToFFTBin(minFreq, 'floor', fftData.length, audioCtx.sampleRate);
+  const maxIdx = hertzToFFTBin(maxFreq, 'ceil', fftData.length, audioCtx.sampleRate);
+  const minI = Math.min(minIdx, maxIdx);
+  const maxI = Math.max(minIdx, maxIdx);
 
   if (ctx2) ctx2.imageSmoothingEnabled = false;
-  ctx.globalCompositeOperation = 'source-over';
 
-  animar();
+  reloj = requestAnimationFrame(animar);
 
   function animar() {
-    if (!ctx || !ctx2) return;
     analizador.getFloatTimeDomainData(datos); // nueva lectura de datos
     fftData.fill(0); // Reiniciar todos los puntos a posición 0
 
-    for (let i = 0; i < visualizerSettings.inputSize; i++) {
-      const x = map(i, 0, visualizerSettings.inputSize, -1, 1);
-      const w = applyWindow(
-        x,
-        visualizerSettings.windowFunction,
-        visualizerSettings.windowParameter,
-        true,
-        visualizerSettings.windowSkew
-      );
-
-      const magnitude = datos[i + analizador.fftSize - visualizerSettings.inputSize];
-      fftData[idxWrapOver(i, fftData.length)] += magnitude * w;
+    for (let i = 0; i < inputSize; i++) {
+      const x = map(i, 0, inputSize, -1, 1);
+      const ancho = applyWindow(x);
+      const magnitud = datos[i + analizador.fftSize - inputSize];
+      fftData[idxWrapOver(i, fftData.length)] += magnitud * ancho;
     }
 
     const entradaFFT = fftData.map((x) => ((x * fftData.length) / fftData.length / 2) * Math.SQRT2);
     const espectro = useNC ? ncMethod(calcComplexFFT(entradaFFT), ncDistance) : calcFFT(entradaFFT);
 
-    pintarMontañas(espectro, fftData.length);
+    /**
+     * MONTAÑAS
+     */
+    /** Borrar fotogramas anteriores */
+    ctx.globalAlpha = 0.1; // Para dejar rastro se usa opacidad menor a 1.0, sin rastro con opacidad 1.
+    // ctx.globalCompositeOperation = 'lighten'; // Se pueden usar tipos de mezcla para crear diferentes efectos al borrar
+    ctx.fillRect(0, 0, lienzo.width, centro.y); // Pintar un cuadro del color, opacidad y efecto definidas en las líneas anteriores, sobre todo el area de las montañas.
 
-    /** INICIO PINTAR ESPECTROGRAMA */
-    ctx.globalAlpha = 0.5;
-    ctx.globalCompositeOperation = 'source-over';
-    // Color de forma de onda en Spectrum
+    /** Estilos para pintar montañas */
+    // ctx.globalCompositeOperation = 'source-over';
+    ctx.globalAlpha = 1;
     ctx.fillStyle = rellenoMontañas;
     ctx.strokeStyle = bordeMontañas;
+    pintarMontañas(espectro, fftData.length);
 
+    /**
+     * AGUA
+     */
+    ctx.globalAlpha = 0.5;
+    // ctx.globalCompositeOperation = 'source-over';
+    ctx.fillStyle = 'white';
+    pintarEspectrograma(espectro, fftData.length);
+
+    if (verGrilla) pintarGrilla(lienzo, ctx, audioCtx);
+    reloj = requestAnimationFrame(animar);
+  }
+
+  function montañaY(i: number, espectro: number[]) {
+    const largoE = espectro.length;
+    return map(
+      ascale(espectro[idxWrapOver(i, largoE)] * weightSpectrumAtFreq(fftBinToHertz(i, largoE, audioCtx.sampleRate))),
+      0,
+      1,
+      centro.y,
+      0
+    );
+  }
+
+  function pintarMontañas(espectro: number[], numPuntos: number) {
+    const datos: Punto[] = [];
+    datos.push(
+      new Punto(0, centro.y), // primer punto
+      new Punto(0, montañaY(minIdx, espectro)) // Primer punto con datos
+    );
+
+    for (let i = minI + 1; i < maxI; i++) {
+      const x = map(
+        fscale(fftBinToHertz(i, numPuntos, audioCtx.sampleRate), visualizerSettings.fscale, 0),
+        min2,
+        max2,
+        0,
+        lienzo.width
+      );
+      const y = montañaY(i, espectro);
+
+      datos.push(new Punto(x, y));
+    }
+
+    datos.push(new Punto(0, montañaY(maxIdx, espectro)), new Punto(lienzo.width, centro.y));
+
+    ctx.beginPath();
+    ctx.moveTo(datos[0].x, datos[0].y);
+
+    for (let i = 1; i < datos.length; i++) {
+      const { x, y } = datos[i];
+      ctx.lineTo(x, y);
+    }
+
+    ctx.fill();
+    ctx.stroke();
+  }
+
+  function pintarEspectrograma(espectro: number[], numPuntos: number) {
     const spectrogramBars: BarraEspectrograma[] = [];
+    const rangoMin = Math.min(minRange, maxRange);
+    const rangoMax = Math.max(minRange, maxRange);
 
-    for (let i = Math.min(minRange, maxRange); i <= Math.max(minRange, maxRange); i++) {
+    for (let i = rangoMin; i <= rangoMax; i++) {
       const lowerBound = map(
-        fscale(
-          fftBinToHertz(i - 0.5, fftData.length, audioCtx.sampleRate),
-          visualizerSettings.fscale,
-          visualizerSettings.hzLinearFactor / 100
-        ),
+        fscale(fftBinToHertz(i - 0.5, numPuntos, audioCtx.sampleRate), visualizerSettings.fscale, 0),
         min2,
         max2,
         0,
@@ -122,11 +204,7 @@ function iniciarViaje(audioCtx: AudioContext, analizador: AnalyserNode, datos: F
       );
 
       const higherBound = map(
-        fscale(
-          fftBinToHertz(i + 0.5, fftData.length, audioCtx.sampleRate),
-          visualizerSettings.fscale,
-          visualizerSettings.hzLinearFactor / 100
-        ),
+        fscale(fftBinToHertz(i + 0.5, numPuntos, audioCtx.sampleRate), visualizerSettings.fscale, 0),
         min2,
         max2,
         0,
@@ -169,7 +247,7 @@ function iniciarViaje(audioCtx: AudioContext, analizador: AnalyserNode, datos: F
       }
 
       const [rojo, verde, azul] = rgbAgua;
-      const mag = ascale(value, altAmplitude);
+      const mag = ascale(value);
       const { r, g, b } = calcRGB(mag * rojo * -1 + rojo, mag * verde * -1 + verde, mag * azul * -1 + azul);
       const x1 = clamp(spectrogramBars[i].start, 0, lienzoInvisible.width);
       const x2 = clamp(spectrogramBars[i].end, 0, lienzoInvisible.width);
@@ -181,78 +259,6 @@ function iniciarViaje(audioCtx: AudioContext, analizador: AnalyserNode, datos: F
     ctx2.drawImage(lienzoInvisible, 0, 1);
     ctx.fillRect(0, lienzo.height - lienzoInvisible.height, lienzoInvisible.width, lienzoInvisible.height);
     ctx.drawImage(lienzoInvisible, 0, lienzo.height - lienzoInvisible.height);
-
-    /** FIN PINTAR ESPECTROGRAMA */
-
-    if (verGrilla) pintarGrilla(lienzo, ctx, audioCtx);
-    requestAnimationFrame(animar);
-  }
-
-  function pintarMontañas(espectro: number[], length: number) {
-    if (!ctx) return;
-    const piso = lienzo.height / 2;
-
-    ctx.beginPath();
-    ctx.lineTo(0, piso);
-
-    ctx.lineTo(
-      0,
-      map(
-        ascale(
-          espectro[idxWrapOver(minIdx, espectro.length)] *
-            weightSpectrumAtFreq(fftBinToHertz(minIdx, espectro.length, audioCtx.sampleRate))
-        ),
-        0,
-        1,
-        piso,
-        0
-      )
-    );
-
-    for (let i = min; i < max; i++) {
-      ctx.lineTo(
-        map(
-          fscale(
-            fftBinToHertz(i, length, audioCtx.sampleRate),
-            visualizerSettings.fscale,
-            visualizerSettings.hzLinearFactor / 100
-          ),
-          min2,
-          max2,
-          0,
-          lienzo.width
-        ),
-        map(
-          ascale(
-            espectro[idxWrapOver(i, espectro.length)] *
-              weightSpectrumAtFreq(fftBinToHertz(i, espectro.length, audioCtx.sampleRate))
-          ),
-          0,
-          1,
-          piso,
-          0
-        )
-      );
-    }
-
-    ctx.lineTo(
-      0,
-      map(
-        ascale(
-          espectro[idxWrapOver(maxIdx, espectro.length)] *
-            weightSpectrumAtFreq(fftBinToHertz(maxIdx, espectro.length, audioCtx.sampleRate))
-        ),
-        0,
-        1,
-        piso,
-        0
-      )
-    );
-
-    ctx.lineTo(lienzo.width, piso);
-    ctx.globalAlpha = 0.1;
-    ctx.fill();
-    ctx.stroke();
   }
 }
 
@@ -267,7 +273,6 @@ if (botonesSonidos.length) {
     boton.addEventListener('click', () => {
       document.querySelector<HTMLLIElement>('.botonSonido.activo')?.classList.remove('activo');
       boton.classList.add('activo');
-
       iniciarAudio(archivo);
     });
   });
@@ -303,7 +308,7 @@ function crearContexto() {
   A higher value will result in more details in the frequency domain but fewer details in the amplitude domain.
   Must be a power of 2 between 2^5 and 2^15. 
   https://developer.mozilla.org/en-US/docs/Web/API/AnalyserNode/fftSize */
-  analizador.fftSize = 32768; // maxes out FFT size
+  analizador.fftSize = visualizerSettings.fftSize;
   // Los datos del audio guardados en un array de Float32
   const datos = new Float32Array(analizador.fftSize);
   fuenteAudio.connect(analizador);
@@ -328,6 +333,8 @@ export function escalar() {
   const escala = devicePixelRatio;
   lienzo.width = contenedor.clientWidth * escala;
   lienzo.height = contenedor.clientHeight * escala;
+  centro.x = lienzo.width / 2;
+  centro.y = lienzo.height / 2;
   lienzoInvisible.width = lienzo.width;
-  lienzoInvisible.height = visualizerSettings.display === 'both' ? Math.trunc(lienzo.height / 2) : lienzo.height;
+  lienzoInvisible.height = visualizerSettings.display === 'both' ? Math.trunc(centro.y) : lienzo.height;
 }

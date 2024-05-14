@@ -1,4 +1,3 @@
-import Meyda from 'meyda';
 import { visualizerSettings } from './constantes';
 import type { FFTComplejo, TBandas } from './tipos';
 
@@ -15,7 +14,7 @@ export function idxWrapOver(x: number, length: number) {
 }
 
 // Hz and FFT bin conversion
-export function hertzToFFTBin(x: number, y = 'round', bufferSize = 4096, sampleRate = 44100) {
+export function hertzToFFTBin(x: number, y = 'round', bufferSize = 4096, sampleRate = 44100): number {
   const bin = (x * bufferSize) / sampleRate;
   let func = y;
 
@@ -29,12 +28,12 @@ export function fftBinToHertz(x: number, bufferSize = 4096, sampleRate = 44100) 
 }
 
 // Calculate the FFT
-export function calcFFT(input: number[]) {
+export function calcFFT(input: number[]): number[] {
   const fft = [...input];
   const fft2 = [...input];
 
   transform(fft, fft2);
-  const respuesta = new Array(Math.round(fft.length)).fill(0);
+  const respuesta: number[] = new Array(Math.round(fft.length)).fill(0);
 
   for (let i = 0; i < respuesta.length; i++) {
     respuesta[i] = Math.hypot(fft[i], fft2[i]) / fft.length;
@@ -523,41 +522,8 @@ export function fscale(x: number, freqScale = 'logarithmic', freqSkew = 0.5) {
   }
 }
 
-export function crearAnalizadorMeyda(contexto, fuente) {
-  // console.log(analizar);
-  // const { ctx, fuente } = analizar;
-
-  let datosAnalizador;
-  let analizadorMeyda;
-  if (typeof Meyda === 'undefined') {
-    console.log('No se encuentra Meyda.');
-  } else {
-    analizadorMeyda = Meyda.createMeydaAnalyzer({
-      audioContext: contexto,
-      source: fuente,
-      bufferSize: 1024,
-      sampleRate: 44100,
-      featureExtractors: ['amplitudeSpectrum', 'zcr', 'spectralSpread', 'spectralSkewness'],
-      callback: revisarEstados,
-    });
-
-    const tamañoBuffer = analizadorMeyda.buffersize;
-
-    analizadorMeyda.start();
-    return Object.assign({ contexto, fuente }, { analizadorMeyda, datosAnalizador, bufferSize: 1024 });
-  }
-
-  // console.log(datosAnalizador);
-}
-
-export function revisarEstados(features) {
-  const { amplitudeSpectrum, zcr, spectralSpread, spectralSkewness } = features;
-  const caracteristicas = { amplitudeSpectrum, zcr, spectralSpread, spectralSkewness };
-  mostrarImagen('pajaros', 4000, features);
-}
-
 export function encontrarBins(frecuencia: number) {
-  let bins: number[] = [];
+  const bins: number[] = [];
   for (let i: number = 0; i <= 512; i++) {
     bins.push(i * 43 + 20);
   }
@@ -565,40 +531,6 @@ export function encontrarBins(frecuencia: number) {
   return i;
 }
 
-function mostrarImagen(imagenes: string, frecuencia: number, caracteristicasAudio) {
-  let bin = encontrarBins(frecuencia);
-  const contenedorImagenes = document.getElementById(`${imagenes}`) as HTMLDivElement;
-
-  const identificarCopeton =
-    caracteristicasAudio.amplitudeSpectrum[bin] > 5 &&
-    caracteristicasAudio.amplitudeSpectrum[78] < 3 &&
-    caracteristicasAudio.amplitudeSpectrum[27] < 7 &&
-    caracteristicasAudio.zcr > 170;
-
-  const identificarTingua =
-    caracteristicasAudio.amplitudeSpectrum[bin] > 5 &&
-    caracteristicasAudio.amplitudeSpectrum[78] < 3 &&
-    caracteristicasAudio.amplitudeSpectrum[27] < 7 &&
-    caracteristicasAudio.zcr < 170;
-
-  if (identificarCopeton) {
-    //console.log('copetón', caracteristicasAudio.amplitudeSpectrum);
-    const imagen = document.createElement('img');
-    imagen.classList.add('imagen');
-    imagen.style.right = `${(bin * 100) / 512 + numeroAleatorio(-5, 5)}vw`; //`${Math.random() * 10 + 65}vw`;
-    imagen.style.top = `${caracteristicasAudio.amplitudeSpectrum[bin]}vh`;
-    imagen.src = '../copeton.PNG';
-
-    contenedorImagenes.appendChild(imagen);
-
-    setTimeout(() => {
-      // texto.innerText = '';
-    }, 500);
-  } else if (identificarTingua) {
-    console.log('tingua');
-  }
-}
-
-function numeroAleatorio(min, max) {
+export function numeroAleatorio(min: number, max: number) {
   return Math.floor(Math.random() * (max - min + 1) + min);
 }

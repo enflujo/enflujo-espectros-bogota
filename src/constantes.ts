@@ -1,6 +1,6 @@
 export const visualizerSettings = {
-  inputSize: 4096,
-  fftSize: 4096,
+  inputSize: 1024,
+  fftSize: 2048,
   minFreq: 20,
   maxFreq: 20000,
   fscale: 'logarithmic',
