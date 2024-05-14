@@ -1,4 +1,5 @@
 import { defineConfig } from 'vite';
+import { resolve } from 'path';
 
 export default defineConfig({
   // base: '/',
@@ -10,5 +11,9 @@ export default defineConfig({
     outDir: 'publico',
     assetsDir: 'estaticos',
     sourcemap: true,
+    rollupOptions: {
+      principal: resolve(__dirname, 'index.html'),
+      espectro: resolve(__dirname, 'espectro.html'),
+    },
   },
 });
