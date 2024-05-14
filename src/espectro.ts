@@ -1,3 +1,4 @@
+import Meyda, { MeydaFeaturesObject } from 'meyda';
 import './scss/estilos.scss';
 import Transformacion from './tranformacion/Transformacion';
 const lienzo = document.getElementById('lienzo') as HTMLCanvasElement;
@@ -11,12 +12,71 @@ let audioCargado = false;
 let pasoX = 0;
 let pasoY = 0;
 
+export function encontrarBins(frecuencia: number) {
+  const bins: number[] = [];
+  for (let i: number = 0; i <= 512; i++) {
+    bins.push(i * 43 + 20);
+  }
+  const i = bins.findIndex((f) => f > frecuencia);
+  return i;
+}
+
+function crearAnalizadorMeyda(contexto: AudioContext, fuente) {
+  const analizadorMeyda = Meyda.createMeydaAnalyzer({
+    audioContext: contexto,
+    source: fuente,
+    bufferSize: 1024,
+    sampleRate: 44100,
+    featureExtractors: ['amplitudeSpectrum', 'zcr'],
+    callback: revisarEstados,
+  });
+
+  analizadorMeyda.start();
+}
+
+let copeton: boolean = false;
+let tingua: boolean = false;
+
+export function revisarEstados(caracteristicas: MeydaFeaturesObject) {
+  const bin = encontrarBins(4000);
+
+  const { amplitudeSpectrum, complexSpectrum, chroma, zcr } = caracteristicas;
+  const identificarCopeton =
+    amplitudeSpectrum[bin] > 5 && amplitudeSpectrum[78] < 3 && amplitudeSpectrum[27] < 7 && zcr > 170;
+
+  const identificarTingua =
+    amplitudeSpectrum[bin] > 5 && amplitudeSpectrum[78] < 3 && amplitudeSpectrum[27] < 7 && zcr < 170;
+  // console.log(amplitudeSpectrum);
+  if (identificarCopeton) {
+    copeton = true;
+  } else if (identificarTingua) {
+    console.log('tingua');
+    tingua = true;
+  } else {
+    copeton = false;
+    tingua = false;
+  }
+}
+
+const imgCopeton = new Image();
+const imgAbuela = new Image();
+
 escalar();
 window.onresize = escalar;
 const t = new Transformacion();
-t.transladar(300, 100)
-  .rotar(Math.PI / 4)
-  .escalar(2);
+t.transladar(0, 0)
+  //.rotar(Math.PI / 4)
+  .escalar(10, 1);
+
+async function cargarImgs(): Promise<void> {
+  return new Promise((resolver) => {
+    imgCopeton.onload = () => {
+      resolver();
+    };
+    imgCopeton.src = '/copeton.PNG';
+    imgAbuela.src = '/abuela.PNG';
+  });
+}
 
 lienzo.onclick = async () => {
   if (audioCargado) return;
@@ -26,6 +86,8 @@ lienzo.onclick = async () => {
   const fuente = new AudioBufferSourceNode(audioCtx);
   fuente.buffer = audio;
 
+  crearAnalizadorMeyda(audioCtx, fuente);
+
   const analizador = audioCtx.createAnalyser();
   analizador.fftSize = tamañoFFT;
 
@@ -34,6 +96,7 @@ lienzo.onclick = async () => {
 
   audioCargado = true;
   fuente.start();
+  await cargarImgs();
   inicio(analizador);
 };
 
@@ -64,19 +127,44 @@ function inicio(analizador: AnalyserNode) {
     // analizador.getFloatFrequencyData(datos);
     analizador.getByteTimeDomainData(datos);
     analizador.getByteFrequencyData(datos2);
-    // console.log(datos);
+    console.log(datos2);
 
     ctx.beginPath();
     ctx.moveTo(0, centro.y);
 
+    if (copeton) {
+      ctxExt.drawImage(
+        imgCopeton,
+        pasoX,
+        (datos2[93] * dims.alto) / 255,
+        imgCopeton.naturalWidth / 10,
+        imgCopeton.naturalHeight / 10
+      );
+    }
+    if (tingua) {
+      ctxExt.drawImage(
+        imgAbuela,
+        pasoX,
+        (datos2[98] * dims.alto) / 255,
+        imgAbuela.naturalWidth / 10,
+        imgAbuela.naturalHeight / 10
+      );
+    }
+
     for (let i = 0; i < cantidadPuntos; i++) {
-      const punto = datos[i] / 128; //* dims.alto;
+      const punto = datos[i] / 128;
       const puntoF = datos2[i] * 2;
+      if (puntoF > 230) {
+        ctxExt.setTransform(...t.matriz);
+        ctxExt.fillStyle = `rgba(${puntoF | 0}, ${puntoF | 0}, ${(Math.random() * 255) | 0})`;
+      } else {
+        ctxExt.setTransform(1, 0, 0, 1, 0, 0);
+        ctxExt.fillStyle = `rgba(${puntoF | 0}, ${(Math.random() * 100) | 0}, ${(Math.random() * 255) | 0})`; //`rgb(${(Math.random() * 255) | 0}, ${(Math.random() * 255) | 0}, ${(Math.random() * 255) | 0})`;
+      }
       ctx.lineTo(i * pasoX, punto * centro.y);
       ctx.fillRect(i * pasoX, dims.alto - puntoF, 1, puntoF);
-      ctxExt.fillStyle = `rgb(${(Math.random() * 255) | 0}, ${(Math.random() * 255) | 0}, ${(Math.random() * 255) | 0})`;
+
       ctxExt.fillRect(0, i * pasoY, 1, pasoY);
-      // console.log(i * pasoX, dims.alto, 1, dims.alto - datos[i] / 2);
     }
     ctxExt.drawImage(lienzoExt, 1, 0);
 
@@ -85,9 +173,9 @@ function inicio(analizador: AnalyserNode) {
     ctx.stroke();
 
     /** Probar transformador */
-    ctx.setTransform(...t.matriz);
-    ctx.fillRect(0, 0, 50, 50);
-    ctx.resetTransform();
+    // ctx.setTransform(...t.matriz);
+    // ctx.fillRect(0, 0, 50, 50);
+    // ctx.resetTransform();
 
     requestAnimationFrame(animar);
   }
