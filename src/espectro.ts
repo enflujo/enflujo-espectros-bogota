@@ -14,9 +14,9 @@ let pasoY = 0;
 escalar();
 window.onresize = escalar;
 const t = new Transformacion();
-t.transladar(100, 100)
+t.transladar(300, 100)
   .rotar(Math.PI / 4)
-  .escalar(2, 1.3);
+  .escalar(2);
 
 lienzo.onclick = async () => {
   if (audioCargado) return;
@@ -57,6 +57,7 @@ function inicio(analizador: AnalyserNode) {
   borrarTodo();
 
   function animar() {
+    if (!ctxExt) return;
     ctx.fillStyle = 'white';
     ctx.fillRect(0, 0, dims.ancho, dims.alto);
     ctx.fillStyle = 'pink';
@@ -70,12 +71,16 @@ function inicio(analizador: AnalyserNode) {
 
     for (let i = 0; i < cantidadPuntos; i++) {
       const punto = datos[i] / 128; //* dims.alto;
-      const puntoF = datos2[i];
+      const puntoF = datos2[i] * 2;
       ctx.lineTo(i * pasoX, punto * centro.y);
       ctx.fillRect(i * pasoX, dims.alto - puntoF, 1, puntoF);
-      // ctxExt?.fillRect()
+      ctxExt.fillStyle = `rgb(${(Math.random() * 255) | 0}, ${(Math.random() * 255) | 0}, ${(Math.random() * 255) | 0})`;
+      ctxExt.fillRect(0, i * pasoY, 1, pasoY);
       // console.log(i * pasoX, dims.alto, 1, dims.alto - datos[i] / 2);
     }
+    ctxExt.drawImage(lienzoExt, 1, 0);
+
+    ctx.drawImage(lienzoExt, 0, 0);
     ctx.lineTo(dims.ancho, centro.y);
     ctx.stroke();
 
