@@ -27,20 +27,22 @@ function crearAnalizadorMeyda(contexto: AudioContext, fuente) {
     source: fuente,
     bufferSize: 1024,
     sampleRate: 44100,
-    featureExtractors: ['amplitudeSpectrum', 'zcr'],
+    featureExtractors: ['amplitudeSpectrum', 'zcr', 'rms'],
     callback: revisarEstados,
   });
 
   analizadorMeyda.start();
+  return analizadorMeyda;
 }
 
 let copeton: boolean = false;
 let tingua: boolean = false;
+let nivel: number = 0;
 
 export function revisarEstados(caracteristicas: MeydaFeaturesObject) {
   const bin = encontrarBins(4000);
 
-  const { amplitudeSpectrum, complexSpectrum, chroma, zcr } = caracteristicas;
+  const { amplitudeSpectrum, complexSpectrum, chroma, zcr, rms } = caracteristicas;
   const identificarCopeton =
     amplitudeSpectrum[bin] > 5 && amplitudeSpectrum[78] < 3 && amplitudeSpectrum[27] < 7 && zcr > 170;
 
@@ -56,6 +58,8 @@ export function revisarEstados(caracteristicas: MeydaFeaturesObject) {
     copeton = false;
     tingua = false;
   }
+
+  nivel = caracteristicas.rms;
 }
 
 const imgCopeton = new Image();
@@ -77,7 +81,7 @@ async function cargarImgs(): Promise<void> {
     imgAbuela.src = '/abuela.PNG';
   });
 }
-
+let analizadorMeyda;
 lienzo.onclick = async () => {
   if (audioCargado) return;
   const archivo = await fetch('/S1_paisones Suba RvdH_V1.wav').then((respuesta) => respuesta.arrayBuffer());
@@ -86,7 +90,7 @@ lienzo.onclick = async () => {
   const fuente = new AudioBufferSourceNode(audioCtx);
   fuente.buffer = audio;
 
-  crearAnalizadorMeyda(audioCtx, fuente);
+  analizadorMeyda = crearAnalizadorMeyda(audioCtx, fuente);
 
   const analizador = audioCtx.createAnalyser();
   analizador.fftSize = tamañoFFT;
@@ -123,53 +127,61 @@ function inicio(analizador: AnalyserNode) {
     if (!ctxExt) return;
     ctx.fillStyle = 'white';
     ctx.fillRect(0, 0, dims.ancho, dims.alto);
-    ctx.fillStyle = 'pink';
+    // console.log(nivel);
     // analizador.getFloatFrequencyData(datos);
     analizador.getByteTimeDomainData(datos);
     analizador.getByteFrequencyData(datos2);
-    console.log(datos2);
-
-    ctx.beginPath();
-    ctx.moveTo(0, centro.y);
 
     if (copeton) {
       ctxExt.drawImage(
         imgCopeton,
-        pasoX,
+        dims.ancho - 250,
         (datos2[93] * dims.alto) / 255,
-        imgCopeton.naturalWidth / 10,
-        imgCopeton.naturalHeight / 10
+        imgCopeton.naturalWidth / 14,
+        imgCopeton.naturalHeight / 14
       );
     }
     if (tingua) {
       ctxExt.drawImage(
         imgAbuela,
-        pasoX,
+        dims.ancho - 250,
         (datos2[98] * dims.alto) / 255,
-        imgAbuela.naturalWidth / 10,
-        imgAbuela.naturalHeight / 10
+        imgAbuela.naturalWidth / 14,
+        imgAbuela.naturalHeight / 14
       );
     }
+
+    // pintar barras
+    ctx.fillStyle = 'blue';
+    ctx.beginPath();
+    ctx.moveTo(0, centro.y);
 
     for (let i = 0; i < cantidadPuntos; i++) {
       const punto = datos[i] / 128;
       const puntoF = datos2[i] * 2;
-      if (puntoF > 230) {
-        ctxExt.setTransform(...t.matriz);
-        ctxExt.fillStyle = `rgba(${puntoF | 0}, ${puntoF | 0}, ${(Math.random() * 255) | 0})`;
-      } else {
-        ctxExt.setTransform(1, 0, 0, 1, 0, 0);
-        ctxExt.fillStyle = `rgba(${puntoF | 0}, ${(Math.random() * 100) | 0}, ${(Math.random() * 255) | 0})`; //`rgb(${(Math.random() * 255) | 0}, ${(Math.random() * 255) | 0}, ${(Math.random() * 255) | 0})`;
-      }
+
+      // if (puntoF > 230) {
+      //   ctxExt.setTransform(...t.matriz);
+      //   ctxExt.fillStyle = `rgba(${puntoF | 0}, ${puntoF | 0}, ${(Math.random() * 255) | 0})`;
+      // } else {
+      ctxExt.setTransform(1, 0, 0, 1, 0, 0);
+      ctxExt.fillStyle = `rgba(${(Math.random() * 200) | 0}, ${(puntoF / 2) | 50}, ${(puntoF / 2) | 200} )`; //`rgb(${(Math.random() * 255) | 0}, ${(Math.random() * 255) | 0}, ${(Math.random() * 255) | 0})`;
+      //}
       ctx.lineTo(i * pasoX, punto * centro.y);
       ctx.fillRect(i * pasoX, dims.alto - puntoF, 1, puntoF);
 
-      ctxExt.fillRect(0, i * pasoY, 1, pasoY);
+      ctxExt.fillRect(dims.ancho, i * pasoY, -1, pasoY);
     }
-    ctxExt.drawImage(lienzoExt, 1, 0);
 
+    ctxExt.drawImage(lienzoExt, -1, 0);
     ctx.drawImage(lienzoExt, 0, 0);
+    ctx.strokeStyle = '#85f5d6';
     ctx.lineTo(dims.ancho, centro.y);
+    ctx.stroke();
+
+    ctx.strokeStyle = '#fed85d';
+    ctx.beginPath();
+    ctx.arc(centro.x / 2, 100, nivel * 2000, 0, 2 * Math.PI);
     ctx.stroke();
 
     /** Probar transformador */
