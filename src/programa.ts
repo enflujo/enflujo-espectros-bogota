@@ -35,7 +35,7 @@ const ctx2 = lienzoInvisible.getContext('2d') as OffscreenCanvasRenderingContext
 const botonesSonidos = document.querySelectorAll<HTMLLIElement>('.botonSonido');
 const fftData: number[] = new Array(visualizerSettings.fftSize).fill(0);
 const centro = { x: window.innerWidth / 2, y: window.innerHeight / 2 };
-const verGrilla = false; // para que pinte o no la grilla
+const verGrilla = true; // para que pinte o no la grilla
 let contextoAudioCreado = false;
 let reloj = 0;
 

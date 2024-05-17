@@ -4,13 +4,22 @@ import Transformacion from './tranformacion/Transformacion';
 const lienzo = document.getElementById('lienzo') as HTMLCanvasElement;
 const ctx = lienzo.getContext('2d') as CanvasRenderingContext2D;
 const lienzoExt = new OffscreenCanvas(0, 0);
+const lienzoBarras = new OffscreenCanvas(0, 0);
+const lienzoBu = new OffscreenCanvas(0, 0);
+const lienzoMontaña = new OffscreenCanvas(0, 0);
 const ctxExt = lienzoExt.getContext('2d');
+const ctxBarras = lienzoBarras.getContext('2d');
+const ctxBu = lienzoBu.getContext('2d');
+const ctxMontaña = lienzoMontaña.getContext('2d');
 const dims = { ancho: 0, alto: 0, pasoX: 0 };
 const centro = { x: 0, y: 0 };
 const tamañoFFT = 2048;
+const cantidadPuntos = tamañoFFT / 2;
 let audioCargado = false;
 let pasoX = 0;
 let pasoY = 0;
+const pasoR = (2 * Math.PI) / cantidadPuntos;
+const tBu = new Transformacion();
 
 export function encontrarBins(frecuencia: number) {
   const bins: number[] = [];
@@ -37,12 +46,21 @@ function crearAnalizadorMeyda(contexto: AudioContext, fuente) {
 
 let copeton: boolean = false;
 let tingua: boolean = false;
+let abuela: boolean = false;
+let mirla: boolean = false;
+let mosca: boolean = false;
+
 let nivel: number = 0;
 
 export function revisarEstados(caracteristicas: MeydaFeaturesObject) {
   const bin = encontrarBins(4000);
 
+  //console.log('voz: ' + encontrarBins(500));
+
   const { amplitudeSpectrum, complexSpectrum, chroma, zcr, rms } = caracteristicas;
+  //console.log(amplitudeSpectrum);
+  const identificarabuela = amplitudeSpectrum[16] > 7 && amplitudeSpectrum[47] > 5 && zcr < 100 && zcr > 84;
+
   const identificarCopeton =
     amplitudeSpectrum[bin] > 5 && amplitudeSpectrum[78] < 3 && amplitudeSpectrum[27] < 7 && zcr > 170;
 
@@ -54,9 +72,12 @@ export function revisarEstados(caracteristicas: MeydaFeaturesObject) {
   } else if (identificarTingua) {
     console.log('tingua');
     tingua = true;
+  } else if (identificarabuela) {
+    abuela = true;
+  } else if (mirla) {
+    mirla = true;
   } else {
-    copeton = false;
-    tingua = false;
+    copeton = tingua = abuela = mirla = false;
   }
 
   nivel = caracteristicas.rms;
@@ -64,6 +85,7 @@ export function revisarEstados(caracteristicas: MeydaFeaturesObject) {
 
 const imgCopeton = new Image();
 const imgAbuela = new Image();
+const imgMirla = new Image();
 
 escalar();
 window.onresize = escalar;
@@ -79,6 +101,7 @@ async function cargarImgs(): Promise<void> {
     };
     imgCopeton.src = '/copeton.PNG';
     imgAbuela.src = '/abuela.PNG';
+    imgMirla.src = '/mirla.PNG';
   });
 }
 let analizadorMeyda;
@@ -106,7 +129,7 @@ lienzo.onclick = async () => {
 
 function borrarTodo() {
   // ctx.save();
-  ctx.fillStyle = 'white';
+  ctx.fillStyle = 'pink';
   ctx.fillRect(0, 0, dims.ancho, dims.alto);
   // ctx.restore();
 
@@ -114,7 +137,6 @@ function borrarTodo() {
 }
 
 function inicio(analizador: AnalyserNode) {
-  const cantidadPuntos = tamañoFFT / 2;
   const tamañoDatos = analizador.frequencyBinCount;
   const datos = new Uint8Array(tamañoDatos);
   const datos2 = new Uint8Array(tamañoDatos);
@@ -124,11 +146,19 @@ function inicio(analizador: AnalyserNode) {
   borrarTodo();
 
   function animar() {
-    if (!ctxExt) return;
-    ctx.fillStyle = 'white';
+    if (!ctxExt || !ctxBarras || !ctxBu || !ctxMontaña) return;
+    /**
+     * Borrar antes de pintar un nuevo fotograma
+     */
+    ctx.fillStyle = 'pink';
     ctx.fillRect(0, 0, dims.ancho, dims.alto);
-    // console.log(nivel);
+    ctxBarras.clearRect(0, 0, dims.ancho, dims.alto);
+    ctxBu.clearRect(0, 0, dims.ancho, dims.alto);
+    ctxMontaña.clearRect(0, 0, dims.ancho, dims.alto);
+
     // analizador.getFloatFrequencyData(datos);
+
+    /** Extraer datos */
     analizador.getByteTimeDomainData(datos);
     analizador.getByteFrequencyData(datos2);
 
@@ -137,52 +167,102 @@ function inicio(analizador: AnalyserNode) {
         imgCopeton,
         dims.ancho - 250,
         (datos2[93] * dims.alto) / 255,
-        imgCopeton.naturalWidth / 14,
-        imgCopeton.naturalHeight / 14
+        imgCopeton.naturalWidth / 11,
+        imgCopeton.naturalHeight / 11
       );
     }
-    if (tingua) {
+
+    if (abuela) {
       ctxExt.drawImage(
         imgAbuela,
         dims.ancho - 250,
         (datos2[98] * dims.alto) / 255,
-        imgAbuela.naturalWidth / 14,
-        imgAbuela.naturalHeight / 14
+        imgAbuela.naturalWidth / 16,
+        imgAbuela.naturalHeight / 16
       );
     }
 
-    // pintar barras
+    if (mirla) {
+      ctxExt.drawImage(
+        imgMirla,
+        dims.ancho - 250,
+        (datos2[98] * dims.alto) / 255,
+        imgMirla.naturalWidth / 14,
+        imgMirla.naturalHeight / 14
+      );
+    }
+
     ctx.fillStyle = 'blue';
     ctx.beginPath();
     ctx.moveTo(0, centro.y);
-
+    ctxBarras.fillStyle = 'blue';
+    ctxBu.beginPath();
+    ctxBu.moveTo(centro.x, centro.y);
+    ctxBu.strokeStyle = 'white';
+    ctxMontaña.beginPath();
+    ctxMontaña.moveTo(centro.x + centro.x / 2, centro.y - centro.y / 1.1);
+    ctxMontaña.strokeStyle = 'white';
     for (let i = 0; i < cantidadPuntos; i++) {
       const punto = datos[i] / 128;
       const puntoF = datos2[i] * 2;
 
-      // if (puntoF > 230) {
-      //   ctxExt.setTransform(...t.matriz);
-      //   ctxExt.fillStyle = `rgba(${puntoF | 0}, ${puntoF | 0}, ${(Math.random() * 255) | 0})`;
-      // } else {
       ctxExt.setTransform(1, 0, 0, 1, 0, 0);
       ctxExt.fillStyle = `rgba(${(Math.random() * 200) | 0}, ${(puntoF / 2) | 50}, ${(puntoF / 2) | 200} )`; //`rgb(${(Math.random() * 255) | 0}, ${(Math.random() * 255) | 0}, ${(Math.random() * 255) | 0})`;
-      //}
-      ctx.lineTo(i * pasoX, punto * centro.y);
-      ctx.fillRect(i * pasoX, dims.alto - puntoF, 1, puntoF);
-
       ctxExt.fillRect(dims.ancho, i * pasoY, -1, pasoY);
+      //y2 * sin(angle) + x2 * cos(angle)
+      // y2 * cos(angle) - x2 * sin(angle)
+
+      const xBu = puntoF * Math.acos(pasoR * i) + centro.x;
+      const yBu = puntoF * Math.sin(pasoR * i) + centro.y;
+      ctxBu.lineTo(xBu, yBu);
+
+      // Montaña
+      const xMontaña = (puntoF / 4) * Math.tan(pasoR * i) + centro.x + centro.x / 2;
+      const yMontaña = (puntoF / 4) * Math.atan(pasoR * i) + centro.y - centro.y / 1.1;
+      ctxMontaña.lineTo(xMontaña, yMontaña);
+
+      ctx.lineTo(i * pasoX, punto * centro.y); // Línea del centro
+      ctxBarras.fillRect(i * pasoX, dims.alto - puntoF, 5, puntoF); // Pintar barras
     }
+    ctxBu.stroke();
+    ctxMontaña.stroke();
 
     ctxExt.drawImage(lienzoExt, -1, 0);
     ctx.drawImage(lienzoExt, 0, 0);
+
+    ctx.save();
+    ctx.globalCompositeOperation = 'color-dodge';
+    ctx.drawImage(lienzoBarras, 0, 0);
+    ctx.restore();
+
+    ctx.drawImage(lienzoBu, 0, 0);
+    ctxBu.translate(dims.ancho, 0);
+    ctxBu.scale(-1, 1);
+
+    ctx.save();
+    ctx.scale(0.4, 1);
+    ctx.translate(dims.ancho + dims.ancho / 3, 0);
+    ctx.drawImage(lienzoMontaña, 0, 0);
+    ctx.restore();
+
+    ctx.drawImage(lienzoBu, 0, 0, -dims.ancho, dims.alto);
+
+    // Pintar onda central
     ctx.strokeStyle = '#85f5d6';
     ctx.lineTo(dims.ancho, centro.y);
     ctx.stroke();
 
-    ctx.strokeStyle = '#fed85d';
-    ctx.beginPath();
-    ctx.arc(centro.x / 2, 100, nivel * 2000, 0, 2 * Math.PI);
-    ctx.stroke();
+    if (tingua) {
+      ctxExt.font = '30px serif';
+      ctxExt.fillText('tingua', dims.ancho - 250, (datos2[93] * dims.alto) / 255);
+      ctxExt.strokeStyle = '#fed85d';
+      ctxExt.beginPath();
+      ctxExt.arc(centro.x, centro.y / 2, datos2[93] / 3, 0, 2 * Math.PI);
+      ctx.save();
+      ctx.globalCompositeOperation = 'multiply';
+      ctxExt.stroke();
+      ctx.restore();
+    }
 
     /** Probar transformador */
     // ctx.setTransform(...t.matriz);
@@ -194,8 +274,20 @@ function inicio(analizador: AnalyserNode) {
 }
 
 function escalar() {
-  dims.ancho = lienzo.width = lienzoExt.width = window.innerWidth;
-  dims.alto = lienzo.height = lienzoExt.height = window.innerHeight;
+  dims.ancho =
+    lienzo.width =
+    lienzoExt.width =
+    lienzoBarras.width =
+    lienzoBu.width =
+    lienzoMontaña.width =
+      window.innerWidth;
+  dims.alto =
+    lienzo.height =
+    lienzoExt.height =
+    lienzoBarras.height =
+    lienzoBu.height =
+    lienzoMontaña.height =
+      window.innerHeight;
   centro.x = dims.ancho / 2;
   centro.y = dims.alto / 2;
   ctx.fillStyle = 'pink';
