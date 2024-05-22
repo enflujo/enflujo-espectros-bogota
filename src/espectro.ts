@@ -21,6 +21,8 @@ let pasoX = 0;
 let pasoY = 0;
 const pasoR = (2 * Math.PI) / cantidadPuntos;
 const tBu = new Transformacion();
+let audioCtx: AudioContext;
+const empezarEn = 50;
 
 // Variables para contador de tiempo
 let s: number = 0;
@@ -29,24 +31,23 @@ let h: number = 0; // 0 - 59
 let tiempo: string = '';
 
 function mostrarTiempo() {
-  if (s < 59) {
-    s++;
-  } else {
-    s = 0;
-    if (m < 59) {
-      m++;
-    } else {
-      m = 0;
-      h++;
-    }
-  }
+  const segundos = audioCtx.currentTime + empezarEn;
+  const h = Math.floor(segundos / 3600)
+    .toString()
+    .padStart(2, '0');
+  const m = Math.floor((segundos % 3600) / 60)
+    .toString()
+    .padStart(2, '0');
+  const s = Math.floor(segundos % 60)
+    .toString()
+    .padStart(2, '0');
 
-  tiempo = `${h < 10 ? '0' + h : h}` + ':' + `${m < 10 ? '0' + m : m}` + ':' + `${s < 10 ? '0' + s : s}`;
+  const tiempo = `${h}:${m}:${s}`;
 
   if (!etiquetaTiempo) return;
   etiquetaTiempo.innerText = tiempo;
 
-  setTimeout(mostrarTiempo, 1000);
+  requestAnimationFrame(mostrarTiempo);
 }
 
 export function encontrarBins(frecuencia: number) {
@@ -90,7 +91,7 @@ export function revisarEstados(caracteristicas: MeydaFeaturesObject) {
   copeton = amplitudeSpectrum[bin] > 5 && amplitudeSpectrum[78] < 3 && amplitudeSpectrum[27] < 7 && zcr > 170;
   tingua = amplitudeSpectrum[bin] > 5 && amplitudeSpectrum[78] < 3 && amplitudeSpectrum[27] < 7 && zcr < 170;
   mosca = (tiempo === '00:01:59' && amplitudeSpectrum[2] > 10) || (tiempo === '00:02:43' && amplitudeSpectrum[2] > 3);
-  pasos = tiempo > '00:02:03' && tiempo < '00:02:19' && amplitudeSpectrum[3] > 13 && amplitudeSpectrum[2] > 30;
+  pasos = tiempo === '00:02:03' && amplitudeSpectrum[3] > 13 && amplitudeSpectrum[2] > 30;
 
   if (pasos) {
     console.log(amplitudeSpectrum);
@@ -123,10 +124,11 @@ async function cargarImgs(): Promise<void> {
   });
 }
 let analizadorMeyda;
+
 lienzo.onclick = async () => {
   if (audioCargado) return;
   const archivo = await fetch('/S1_paisones Suba RvdH_V1.wav').then((respuesta) => respuesta.arrayBuffer());
-  const audioCtx = new AudioContext();
+  audioCtx = new AudioContext();
   const audio = await audioCtx.decodeAudioData(archivo);
   const fuente = new AudioBufferSourceNode(audioCtx);
   fuente.buffer = audio;
@@ -140,7 +142,7 @@ lienzo.onclick = async () => {
   fuente.connect(audioCtx.destination);
 
   audioCargado = true;
-  fuente.start();
+  fuente.start(0, empezarEn);
   await cargarImgs();
   inicio(analizador);
 };
@@ -245,9 +247,9 @@ function inicio(analizador: AnalyserNode) {
       ctxBu.lineTo(xBu, yBu);
 
       // Montaña
-      // const xMontaña = (puntoF / 4) * Math.tan(pasoR * i) + centro.x + centro.x / 2;
-      // const yMontaña = (puntoF / 4) * Math.atan(pasoR * i) + centro.y - centro.y / 1.1;
-      // ctxMontaña.lineTo(xMontaña, yMontaña); */
+      const xMontaña = (puntoF / 4) * Math.tan(pasoR * i) + centro.x + centro.x / 2;
+      const yMontaña = (puntoF / 4) * Math.atan(pasoR * i) + centro.y - centro.y / 1.1;
+      ctxMontaña.lineTo(xMontaña, yMontaña);
 
       ctx.lineTo(i * pasoX, punto * centro.y); // Línea del centro
       ctxBarras.fillRect(i * pasoX, dims.alto - puntoF, 5, puntoF); // Pintar barras
