@@ -8,7 +8,7 @@ export default defineConfig({
   },
   publicDir: 'estaticos',
   build: {
-    outDir: 'public',
+    outDir: 'publico',
     assetsDir: 'estaticos',
     sourcemap: true,
     rollupOptions: {
