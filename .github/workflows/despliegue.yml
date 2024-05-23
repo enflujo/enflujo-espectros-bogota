@@ -5,7 +5,7 @@ on:
     branches: [main]
 
 jobs:
-  build:
+  ci:
     name: 🐘 Desplegar
     runs-on: ubuntu-latest
 
