@@ -24,3 +24,6 @@ jobs:
         run: |
           yarn install --frozen-lockfile
           yarn build
+          with:
+            local-dir: './publico/'
+            dangerous-clean-slate: true
