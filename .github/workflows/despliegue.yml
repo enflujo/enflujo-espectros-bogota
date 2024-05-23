@@ -5,7 +5,7 @@ on:
     branches: [main]
 
 jobs:
-  ci:
+  build:
     name: 🐘 Desplegar
     runs-on: ubuntu-latest
 
@@ -26,4 +26,3 @@ jobs:
           yarn build
           with:
             local-dir: './publico/'
-            dangerous-clean-slate: true
