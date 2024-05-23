@@ -22,16 +22,25 @@ let pasoY = 0;
 const pasoR = (2 * Math.PI) / cantidadPuntos;
 const tBu = new Transformacion();
 let audioCtx: AudioContext;
-const empezarEn = 50;
+const empezarEn = 150;
+
+// booleanos para mostrar elementos
+let copeton: boolean = false;
+let tingua: boolean = false;
+let abuela: boolean = false;
+let mirla: boolean = false;
+let mosca: boolean = false;
+let pasos: boolean = false;
+let risas: boolean = false;
+
+let nivel: number = 0;
 
 // Variables para contador de tiempo
-let s: number = 0;
-let m: number = 0; // 0 - 59
-let h: number = 0; // 0 - 59
-let tiempo: string = '';
+let segundos: number;
 
 function mostrarTiempo() {
-  const segundos = audioCtx.currentTime + empezarEn;
+  segundos = audioCtx.currentTime + empezarEn;
+  // console.log(segundos);
   const h = Math.floor(segundos / 3600)
     .toString()
     .padStart(2, '0');
@@ -73,30 +82,35 @@ function crearAnalizadorMeyda(contexto: AudioContext, fuente) {
   return analizadorMeyda;
 }
 
-let copeton: boolean = false;
-let tingua: boolean = false;
-let abuela: boolean = false;
-let mirla: boolean = false;
-let mosca: boolean = false;
-let pasos: boolean = false;
-
-let nivel: number = 0;
-
 export function revisarEstados(caracteristicas: MeydaFeaturesObject) {
   const bin = encontrarBins(4000);
 
   const { amplitudeSpectrum, complexSpectrum, chroma, zcr, rms } = caracteristicas;
   //  console.log(amplitudeSpectrum, zcr);
-  abuela = tiempo === '00:00:11' && amplitudeSpectrum[16] > 4; //amplitudeSpectrum[16] > 7 && amplitudeSpectrum[47] > 5 && zcr < 100 && zcr > 84;
+  abuela =
+    segundos > 10.5 &&
+    segundos <= 12 &&
+    amplitudeSpectrum[16] > 3 &&
+    amplitudeSpectrum[14] > 7 &&
+    amplitudeSpectrum[9] > 4; //amplitudeSpectrum[16] > 7 && amplitudeSpectrum[47] > 5 && zcr < 100 && zcr > 84;
+
+  // cambiar booleanos a verdadero para mostrar elementos si se cumplen condiciones de tiempo y frecuencia
   copeton = amplitudeSpectrum[bin] > 5 && amplitudeSpectrum[78] < 3 && amplitudeSpectrum[27] < 7 && zcr > 170;
   tingua = amplitudeSpectrum[bin] > 5 && amplitudeSpectrum[78] < 3 && amplitudeSpectrum[27] < 7 && zcr < 170;
-  mosca = (tiempo === '00:01:59' && amplitudeSpectrum[2] > 10) || (tiempo === '00:02:43' && amplitudeSpectrum[2] > 3);
-  pasos = tiempo === '00:02:03' && amplitudeSpectrum[3] > 13 && amplitudeSpectrum[2] > 30;
-
-  if (pasos) {
-    console.log(amplitudeSpectrum);
-  }
-
+  mosca = (segundos === 119 && amplitudeSpectrum[2] > 10) || (segundos === 163 && amplitudeSpectrum[2] > 3);
+  pasos =
+    segundos === 124 ||
+    (segundos > 124 &&
+      segundos < 137 &&
+      amplitudeSpectrum[1] > 30 &&
+      amplitudeSpectrum[2] > 40 &&
+      amplitudeSpectrum[3] > 39);
+  risas =
+    segundos > 157 &&
+    segundos < 160 &&
+    amplitudeSpectrum[8] >= 3.6 &&
+    amplitudeSpectrum[7] >= 3.2 &&
+    amplitudeSpectrum[10] >= 2;
   nivel = caracteristicas.rms;
 }
 
@@ -104,6 +118,7 @@ const imgCopeton = new Image();
 const imgAbuela = new Image();
 const imgMirla = new Image();
 const imgPasos = new Image();
+const imgRisas = new Image();
 
 escalar();
 window.onresize = escalar;
@@ -117,10 +132,11 @@ async function cargarImgs(): Promise<void> {
     imgCopeton.onload = () => {
       resolver();
     };
-    imgCopeton.src = '/copeton.PNG';
-    imgAbuela.src = '/abuela.PNG';
-    imgMirla.src = '/mirla.PNG';
+    imgCopeton.src = '/copeton.png';
+    imgAbuela.src = '/abuela.png';
+    imgMirla.src = '/mirla.png';
     imgPasos.src = '/pasos.png';
+    imgRisas.src = './risas.png';
   });
 }
 let analizadorMeyda;
@@ -180,9 +196,9 @@ function inicio(analizador: AnalyserNode) {
     analizador.getByteTimeDomainData(datos);
     analizador.getByteFrequencyData(datos2);
 
+    // Mostrar imágenes
     if (copeton) {
       ctxExt.drawImage(imgCopeton, dims.ancho - 250, Math.random() * dims.alto - 150, datos2[93] * 3, datos2[93] * 3);
-      console.log(datos2[93], imgCopeton.naturalWidth);
       ctxExt.font = '30px serif';
       ctxExt.fillText('copetón', dims.ancho - 200, (datos2[93] * dims.alto) / 255);
       ctxExt.strokeStyle = '#feff5d';
@@ -210,16 +226,23 @@ function inicio(analizador: AnalyserNode) {
     }
 
     if (pasos) {
-      if (datos2[3] > 198 && datos2[6] > 200) {
-        console.log(datos2);
-        ctxExt.drawImage(
-          imgPasos,
-          dims.ancho - 350,
-          (datos2[93] * dims.alto) / 255 - 200,
-          imgPasos.naturalWidth / 5,
-          imgPasos.naturalHeight / 5
-        );
-      }
+      ctxExt.drawImage(
+        imgPasos,
+        dims.ancho - 350,
+        (datos2[93] * dims.alto) / 255 - 200,
+        imgPasos.naturalWidth / 5,
+        imgPasos.naturalHeight / 5
+      );
+    }
+
+    if (risas) {
+      ctxExt.drawImage(
+        imgRisas,
+        dims.ancho - 350,
+        (datos2[6] * dims.alto) / 255 - dims.alto / 1.1,
+        imgRisas.naturalWidth / 5,
+        imgRisas.naturalHeight / 5
+      );
     }
 
     ctx.fillStyle = 'blue';
@@ -247,9 +270,9 @@ function inicio(analizador: AnalyserNode) {
       ctxBu.lineTo(xBu, yBu);
 
       // Montaña
-      const xMontaña = (puntoF / 4) * Math.tan(pasoR * i) + centro.x + centro.x / 2;
+      /* const xMontaña = (puntoF / 4) * Math.tan(pasoR * i) + centro.x + centro.x / 2;
       const yMontaña = (puntoF / 4) * Math.atan(pasoR * i) + centro.y - centro.y / 1.1;
-      ctxMontaña.lineTo(xMontaña, yMontaña);
+      ctxMontaña.lineTo(xMontaña, yMontaña);*/
 
       ctx.lineTo(i * pasoX, punto * centro.y); // Línea del centro
       ctxBarras.fillRect(i * pasoX, dims.alto - puntoF, 5, puntoF); // Pintar barras
