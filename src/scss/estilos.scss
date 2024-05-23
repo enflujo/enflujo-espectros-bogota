@@ -96,3 +96,15 @@ canvas {
   margin-left: 1em;
   font-family: 'Courier New', Courier, monospace;
 }
+
+#subtitulos {
+  display: none;
+  position: absolute;
+  color: #301a72;
+  background-color: rgba(245, 239, 239, 0.5);
+  padding: 0.5em;
+  margin-left: 1em;
+  bottom: 10%;
+  font-family: 'Courier New', Courier, monospace;
+  left: 43vw;
+}
