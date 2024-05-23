@@ -13,7 +13,7 @@ export default defineConfig({
     sourcemap: true,
     rollupOptions: {
       principal: resolve(__dirname, 'index.html'),
-      espectro: resolve(__dirname, 'version1.html'),
+      version1: resolve(__dirname, 'version1.html'),
     },
   },
 });
