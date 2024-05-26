@@ -161,12 +161,12 @@ export function revisarEstados(caracteristicas: MeydaFeaturesObject) {
 }
 
 const imagenes: { [nombre: string]: { ruta: string; img: HTMLImageElement; ancho: number; alto: number } } = {
-  copeton: { ruta: '/copeton.png', img: new Image(), ancho: 0, alto: 0 },
-  abuela: { ruta: '/abuela.png', img: new Image(), ancho: 0, alto: 0 },
-  mirla: { ruta: '/mirla.png', img: new Image(), ancho: 0, alto: 0 },
-  pasos: { ruta: '/pasos.png', img: new Image(), ancho: 0, alto: 0 },
-  risas: { ruta: '/risas.png', img: new Image(), ancho: 0, alto: 0 },
-  arboloco: { ruta: '/arboloco.png', img: new Image(), ancho: 0, alto: 0 },
+  copeton: { ruta: 'enflujo-espectros-bogota/copeton.png', img: new Image(), ancho: 0, alto: 0 },
+  abuela: { ruta: 'enflujo-espectros-bogota/abuela.png', img: new Image(), ancho: 0, alto: 0 },
+  mirla: { ruta: 'enflujo-espectros-bogota/mirla.png', img: new Image(), ancho: 0, alto: 0 },
+  pasos: { ruta: 'enflujo-espectros-bogota/pasos.png', img: new Image(), ancho: 0, alto: 0 },
+  risas: { ruta: 'enflujo-espectros-bogota/risas.png', img: new Image(), ancho: 0, alto: 0 },
+  arboloco: { ruta: 'enflujo-espectros-bogota/arboloco.png', img: new Image(), ancho: 0, alto: 0 },
 };
 escalar();
 window.onresize = escalar;
@@ -201,7 +201,9 @@ let analizadorMeyda;
 
 lienzo.onclick = async () => {
   if (audioCargado) return;
-  const archivo = await fetch('/S1_paisones Suba RvdH_V1.wav').then((respuesta) => respuesta.arrayBuffer());
+  const archivo = await fetch('enflujo-espectros-bogota/S1_paisones Suba RvdH_V1.wav').then((respuesta) =>
+    respuesta.arrayBuffer()
+  );
   audioCtx = new AudioContext();
   const audio = await audioCtx.decodeAudioData(archivo);
   const fuente = new AudioBufferSourceNode(audioCtx);
