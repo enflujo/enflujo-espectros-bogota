@@ -3,6 +3,7 @@ import './scss/estilos.scss';
 import Transformacion from './tranformacion/Transformacion';
 import subtitulos from './datos/subtitulos.json';
 
+let base = '/enflujo-espectros-bogota';
 const etiquetaTiempo = document.getElementById('tiempo');
 const contenedorSubtitulos = document.getElementById('subtitulos');
 const lienzo = document.getElementById('lienzo') as HTMLCanvasElement;
@@ -161,12 +162,12 @@ export function revisarEstados(caracteristicas: MeydaFeaturesObject) {
 }
 
 const imagenes: { [nombre: string]: { ruta: string; img: HTMLImageElement; ancho: number; alto: number } } = {
-  copeton: { ruta: '/copeton.png', img: new Image(), ancho: 0, alto: 0 },
-  abuela: { ruta: '/abuela.png', img: new Image(), ancho: 0, alto: 0 },
-  mirla: { ruta: '/mirla.png', img: new Image(), ancho: 0, alto: 0 },
-  pasos: { ruta: '/pasos.png', img: new Image(), ancho: 0, alto: 0 },
-  risas: { ruta: '/risas.png', img: new Image(), ancho: 0, alto: 0 },
-  arboloco: { ruta: '/arboloco.png', img: new Image(), ancho: 0, alto: 0 },
+  copeton: { ruta: `${base}/copeton.png`, img: new Image(), ancho: 0, alto: 0 },
+  abuela: { ruta: `${base}/abuela.png`, img: new Image(), ancho: 0, alto: 0 },
+  mirla: { ruta: `${base}/mirla.png`, img: new Image(), ancho: 0, alto: 0 },
+  pasos: { ruta: `${base}/pasos.png`, img: new Image(), ancho: 0, alto: 0 },
+  risas: { ruta: `${base}/risas.png`, img: new Image(), ancho: 0, alto: 0 },
+  arboloco: { ruta: `${base}/arboloco.png`, img: new Image(), ancho: 0, alto: 0 },
 };
 escalar();
 window.onresize = escalar;
@@ -197,8 +198,8 @@ async function cargarImgs(): Promise<void> {
     }
   });
 }
+
 let analizadorMeyda;
-let base = '/enflujo-espectros-bogota';
 
 lienzo.onclick = async () => {
   if (audioCargado) return;
