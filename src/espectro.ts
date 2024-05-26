@@ -198,10 +198,11 @@ async function cargarImgs(): Promise<void> {
   });
 }
 let analizadorMeyda;
+let base = '/enflujo-espectros-bogota';
 
 lienzo.onclick = async () => {
   if (audioCargado) return;
-  const archivo = await fetch('/S1_paisones Suba RvdH_V1.wav').then((respuesta) => respuesta.arrayBuffer());
+  const archivo = await fetch(`${base}/S1_paisones Suba RvdH_V1.wav`).then((respuesta) => respuesta.arrayBuffer());
   audioCtx = new AudioContext();
   const audio = await audioCtx.decodeAudioData(archivo);
   const fuente = new AudioBufferSourceNode(audioCtx);
