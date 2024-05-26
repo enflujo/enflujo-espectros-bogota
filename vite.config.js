@@ -2,7 +2,7 @@ import { defineConfig } from 'vite';
 import { resolve } from 'path';
 
 export default defineConfig({
-  base: '/enflujo-espectros',
+  base: '/enflujo-espectros-bogota',
   server: {
     port: 3000,
   },

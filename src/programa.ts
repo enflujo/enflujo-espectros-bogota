@@ -74,7 +74,6 @@ export function revisarEstados(caracteristicas: MeydaFeaturesObject) {
     amplitudeSpectrum[bin] > 5 && amplitudeSpectrum[78] < 3 && amplitudeSpectrum[27] < 7 && zcr < 170;
   // console.log(amplitudeSpectrum);
   if (identificarCopeton) {
-    //console.log('copetón', caracteristicasAudio.amplitudeSpectrum);
     const imagen = document.createElement('img');
     imagen.classList.add('imagen');
     imagen.style.right = `${(bin * 100) / 512 + numeroAleatorio(-5, 5)}vw`; //`${Math.random() * 10 + 65}vw`;
