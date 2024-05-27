@@ -1,32 +1,50 @@
 import Meyda, { MeydaFeaturesObject } from 'meyda';
 import './scss/estilos.scss';
 import Transformacion from './tranformacion/Transformacion';
-import subtitulos from './datos/subtitulos.json';
+import subtitulosSuba from './datos/subtitulosSuba.json';
+import subtitulosBosa from './datos/subtitulosBosa.json';
+import subtitulosCerroSeco from './datos/subtitulosCerroSeco.json';
+import subtitulosZuque from './datos/subtitulosZuque.json';
 
-const base = '/enflujo-espectros-bogota';
-const etiquetaTiempo = document.getElementById('tiempo');
-const contenedorSubtitulos = document.getElementById('subtitulos');
-const lienzo = document.getElementById('lienzo') as HTMLCanvasElement;
+const base: string = '/enflujo-espectros-bogota';
+const etiquetaTiempo: HTMLParagraphElement = document.getElementById('tiempo') as HTMLParagraphElement;
+const contenedorSubtitulos: HTMLParagraphElement = document.getElementById('subtitulos') as HTMLParagraphElement;
+const lienzo: HTMLCanvasElement = document.getElementById('lienzo') as HTMLCanvasElement;
 const ctx = lienzo.getContext('2d') as CanvasRenderingContext2D;
-const lienzoExt = new OffscreenCanvas(0, 0);
-const lienzoBarras = new OffscreenCanvas(0, 0);
-const lienzoBu = new OffscreenCanvas(0, 0);
-const lienzoMontaña = new OffscreenCanvas(0, 0);
+const lienzoExt: OffscreenCanvas = new OffscreenCanvas(0, 0);
+const lienzoBarras: OffscreenCanvas = new OffscreenCanvas(0, 0);
+const lienzoBu: OffscreenCanvas = new OffscreenCanvas(0, 0);
+const lienzoMontaña: OffscreenCanvas = new OffscreenCanvas(0, 0);
 const ctxExt = lienzoExt.getContext('2d');
 const ctxBarras = lienzoBarras.getContext('2d');
 const ctxBu = lienzoBu.getContext('2d');
 const ctxMontaña = lienzoMontaña.getContext('2d');
-const dims = { ancho: 0, alto: 0, pasoX: 0 };
-const centro = { x: 0, y: 0 };
-const tamañoFFT = 2048;
-const cantidadPuntos = tamañoFFT / 2;
-let audioCargado = false;
-let pasoX = 0;
-let pasoY = 0;
-const pasoR = (2 * Math.PI) / cantidadPuntos;
+const dims: { ancho: number; alto: number; pasoX: number } = { ancho: 0, alto: 0, pasoX: 0 };
+const centro: { x: number; y: number } = { x: 0, y: 0 };
+const tamañoFFT: number = 2048;
+const cantidadPuntos: number = tamañoFFT / 2;
+let audioCargado: boolean = false;
+let pasoX: number = 0;
+let pasoY: number = 0;
+const pasoR: number = (2 * Math.PI) / cantidadPuntos;
 const tBu = new Transformacion();
 let audioCtx: AudioContext;
-const empezarEn = 0;
+const empezarEn: number = 0;
+
+// Rutas de los audios
+const audioSuba: string = 'S1_paisones Suba RvdH_V1';
+const audioBosa: string = 'S2_paisones_Bosa_V3_norm01';
+const audioCerroSeco: string = 'S4_paisones_SC_CerroSeco_V1_norm01';
+const audioZuque: string = 'S3_paisones_Zuque_V3_norm01';
+
+let audioElegido: string = audioSuba;
+
+const botonSuba = document.getElementById('botonSuba');
+const botonBosa = document.getElementById('botonBosa') as HTMLLIElement;
+const botonZuque = document.getElementById('botonZuque');
+const botonCerroSeco = document.getElementById('botonCerroSeco');
+
+const botonesLugar = [botonSuba, botonBosa, botonZuque, botonCerroSeco];
 
 // booleanos para mostrar elementos
 let copeton: boolean = false;
@@ -48,18 +66,18 @@ let segundos: number;
 
 function mostrarTiempo() {
   segundos = audioCtx.currentTime + empezarEn;
-  // console.log(segundos);
-  const h = Math.floor(segundos / 3600)
+
+  const h: string = Math.floor(segundos / 3600)
     .toString()
     .padStart(2, '0');
-  const m = Math.floor((segundos % 3600) / 60)
+  const m: string = Math.floor((segundos % 3600) / 60)
     .toString()
     .padStart(2, '0');
-  const s = Math.floor(segundos % 60)
+  const s: string = Math.floor(segundos % 60)
     .toString()
     .padStart(2, '0');
 
-  const tiempo = `${h}:${m}:${s}`;
+  const tiempo: string = `${h}:${m}:${s}`;
 
   if (!etiquetaTiempo) return;
   etiquetaTiempo.innerText = tiempo;
@@ -67,7 +85,7 @@ function mostrarTiempo() {
   requestAnimationFrame(mostrarTiempo);
 }
 
-function mostrarSubtitulos() {
+function mostrarSubtitulos(subtitulos) {
   if (!contenedorSubtitulos) return;
   subtitulos.forEach((elemento) => {
     if (segundos >= elemento['tiempo-inicial']) {
@@ -108,56 +126,58 @@ export function revisarEstados(caracteristicas: MeydaFeaturesObject) {
   const bin = encontrarBins(100);
   const { amplitudeSpectrum, zcr } = caracteristicas;
   //  console.log(amplitudeSpectrum, zcr);
-  abuela =
-    segundos > 10.5 &&
-    segundos <= 12 &&
-    amplitudeSpectrum[16] > 2 &&
-    amplitudeSpectrum[14] >= 5 &&
-    amplitudeSpectrum[9] > 3; //amplitudeSpectrum[16] > 7 && amplitudeSpectrum[47] > 5 && zcr < 100 && zcr > 84;
 
-  // cambiar booleanos a verdadero para mostrar elementos si se cumplen condiciones de tiempo y frecuencia
-  copeton =
-    segundos > 8 &&
-    segundos < 43 &&
-    amplitudeSpectrum[92] >= 3 &&
-    amplitudeSpectrum[78] <= 2 &&
-    amplitudeSpectrum[27] < 3 &&
-    zcr > 150;
+  if (audioElegido === audioSuba) {
+    abuela =
+      segundos > 10.5 &&
+      segundos <= 12 &&
+      amplitudeSpectrum[16] > 2 &&
+      amplitudeSpectrum[14] >= 5 &&
+      amplitudeSpectrum[9] > 3; //amplitudeSpectrum[16] > 7 && amplitudeSpectrum[47] > 5 && zcr < 100 && zcr > 84;
 
-  tingua_bogotana =
-    segundos >= 87 &&
-    segundos <= 99 &&
-    amplitudeSpectrum[bin] > 5 &&
-    amplitudeSpectrum[78] < 3 &&
-    amplitudeSpectrum[27] < 7 &&
-    zcr < 170;
-  tingua_azul =
-    (segundos >= 78.1 && segundos <= 78.2) ||
-    (segundos >= 80 && segundos <= 88 && amplitudeSpectrum[57] >= 0.1 && amplitudeSpectrum[58] >= 0.5 && zcr < 170);
-  mosca = (segundos >= 119.5 && segundos < 120) || (segundos === 163 && amplitudeSpectrum[2] > 3);
-  abejorro = segundos >= 161 && segundos < 162;
-  abeja = segundos >= 71 && segundos < 71.5;
-  pasos =
-    segundos === 124 ||
-    (segundos > 124 &&
-      segundos < 137 &&
-      amplitudeSpectrum[1] > 20 &&
-      amplitudeSpectrum[2] > 30 &&
-      amplitudeSpectrum[3] > 30);
-  risas =
-    segundos > 157 &&
-    segundos < 160 &&
-    amplitudeSpectrum[8] >= 3.6 &&
-    amplitudeSpectrum[7] >= 3.2 &&
-    amplitudeSpectrum[10] >= 2;
-  arboloco =
-    (segundos > 124 &&
-      segundos < 143 &&
-      amplitudeSpectrum[1] >= 23 &&
-      amplitudeSpectrum[2] >= 40 &&
-      amplitudeSpectrum[3] >= 36) ||
-    (segundos > 144 && segundos < 149 && amplitudeSpectrum[2] >= 30 && amplitudeSpectrum[3] >= 30);
+    // cambiar booleanos a verdadero para mostrar elementos si se cumplen condiciones de tiempo y frecuencia
+    copeton =
+      segundos > 8 &&
+      segundos < 43 &&
+      amplitudeSpectrum[92] >= 3 &&
+      amplitudeSpectrum[78] <= 2 &&
+      amplitudeSpectrum[27] < 3 &&
+      zcr > 150;
 
+    tingua_bogotana =
+      segundos >= 87 &&
+      segundos <= 99 &&
+      amplitudeSpectrum[bin] > 5 &&
+      amplitudeSpectrum[78] < 3 &&
+      amplitudeSpectrum[27] < 7 &&
+      zcr < 170;
+    tingua_azul =
+      (segundos >= 78.1 && segundos <= 78.2) ||
+      (segundos >= 80 && segundos <= 88 && amplitudeSpectrum[57] >= 0.1 && amplitudeSpectrum[58] >= 0.5 && zcr < 170);
+    mosca = (segundos >= 119.5 && segundos < 120) || (segundos === 163 && amplitudeSpectrum[2] > 3);
+    abejorro = segundos >= 161 && segundos < 162;
+    abeja = segundos >= 71 && segundos < 71.5;
+    pasos =
+      segundos === 124 ||
+      (segundos > 124 &&
+        segundos < 137 &&
+        amplitudeSpectrum[1] > 20 &&
+        amplitudeSpectrum[2] > 30 &&
+        amplitudeSpectrum[3] > 30);
+    risas =
+      segundos > 157 &&
+      segundos < 160 &&
+      amplitudeSpectrum[8] >= 3.6 &&
+      amplitudeSpectrum[7] >= 3.2 &&
+      amplitudeSpectrum[10] >= 2;
+    arboloco =
+      (segundos > 124 &&
+        segundos < 143 &&
+        amplitudeSpectrum[1] >= 23 &&
+        amplitudeSpectrum[2] >= 40 &&
+        amplitudeSpectrum[3] >= 36) ||
+      (segundos > 144 && segundos < 149 && amplitudeSpectrum[2] >= 30 && amplitudeSpectrum[3] >= 30);
+  }
   nivel = caracteristicas.rms;
 }
 
@@ -200,32 +220,44 @@ async function cargarImgs(): Promise<void> {
 }
 
 let analizadorMeyda;
-let audioElegido: string = 'S1_paisones Suba RvdH_V1';
+let fuente;
+let animando;
 
-const botonSuba = document.getElementById('botonSuba');
-const botonBosa = document.getElementById('botonBosa');
-const botonZuque = document.getElementById('botonZuque');
-const botonCerroSeco = document.getElementById('botonCerroSeco');
+function elegirAudio(audio) {
+  audioElegido = audio;
+  botonesLugar.forEach((boton) => {
+    boton?.classList.toggle('elegido');
+  });
+}
 
 botonSuba?.addEventListener('click', async function () {
-  audioElegido = 'S1_paisones Suba RvdH_V1';
-});
-botonBosa?.addEventListener('click', async function () {
-  audioElegido = 'S2_paisones_Bosa_V3_norm01';
-});
-botonZuque?.addEventListener('click', async function () {
-  audioElegido = 'S3_paisones_Zuque_V3_norm01';
-});
-botonCerroSeco?.addEventListener('click', async function () {
-  audioElegido = 'S4_paisones_SC_CerroSeco_V1_norm01';
+  elegirAudio(audioSuba);
 });
 
-lienzo.onclick = async () => {
+botonBosa.onclick = async () => {
+  fuente.stop();
+  borrarTodo();
+  cancelAnimationFrame(animando);
+  elegirAudio(audioBosa);
+
+  empezar();
+};
+
+botonCerroSeco?.addEventListener('click', async function () {
+  audioElegido = audioCerroSeco;
+  botonCerroSeco.classList.toggle('elegido');
+});
+botonZuque?.addEventListener('click', async function () {
+  audioElegido = audioZuque;
+  botonZuque.classList.toggle('elegido');
+});
+
+async function empezar() {
   if (audioCargado) return;
   const archivo = await fetch(`${base}/${audioElegido}.wav`).then((respuesta) => respuesta.arrayBuffer());
   audioCtx = new AudioContext();
   const audio = await audioCtx.decodeAudioData(archivo);
-  const fuente = new AudioBufferSourceNode(audioCtx);
+  fuente = new AudioBufferSourceNode(audioCtx);
   fuente.buffer = audio;
 
   analizadorMeyda = crearAnalizadorMeyda(audioCtx, fuente);
@@ -245,9 +277,16 @@ lienzo.onclick = async () => {
   } catch (error) {
     console.error(error);
   }
+}
+
+lienzo.onclick = async () => {
+  empezar();
 };
 
 function borrarTodo() {
+  if (!contenedorSubtitulos) return;
+  contenedorSubtitulos.innerText = '';
+  contenedorSubtitulos.style.display = 'none';
   ctx.fillStyle = 'pink';
   ctx.fillRect(0, 0, dims.ancho, dims.alto);
 }
@@ -259,7 +298,7 @@ function inicio(analizador: AnalyserNode) {
 
   mostrarTiempo();
 
-  requestAnimationFrame(animar);
+  animando = requestAnimationFrame(animar);
 
   borrarTodo();
 
@@ -280,7 +319,9 @@ function inicio(analizador: AnalyserNode) {
     analizador.getByteTimeDomainData(datos);
     analizador.getByteFrequencyData(datos2);
 
-    mostrarSubtitulos();
+    if (audioElegido === audioSuba) {
+      mostrarSubtitulos(subtitulosSuba);
+    }
 
     // Mostrar imágenes
     if (copeton) {
@@ -364,8 +405,6 @@ function inicio(analizador: AnalyserNode) {
       ctxExt.setTransform(1, 0, 0, 1, 0, 0);
       ctxExt.fillStyle = `rgba(${(Math.random() * 200) | 0}, ${(puntoF / 2) | 50}, ${(puntoF / 2) | 200} )`; //`rgb(${(Math.random() * 255) | 0}, ${(Math.random() * 255) | 0}, ${(Math.random() * 255) | 0})`;
       ctxExt.fillRect(dims.ancho, i * pasoY, -1, pasoY);
-      //y2 * sin(angle) + x2 * cos(angle)
-      // y2 * cos(angle) - x2 * sin(angle)
 
       const xBu = puntoF * Math.acos(pasoR * i) + centro.x;
       const yBu = puntoF * Math.sin(pasoR * i) + centro.y;
@@ -457,7 +496,7 @@ function inicio(analizador: AnalyserNode) {
     // ctx.fillRect(0, 0, 50, 50);
     // ctx.resetTransform();
 
-    requestAnimationFrame(animar);
+    animando = requestAnimationFrame(animar);
   }
 }
 
