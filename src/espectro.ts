@@ -1,13 +1,14 @@
 import Meyda, { MeydaFeaturesObject } from 'meyda';
 import './scss/estilos.scss';
 import Transformacion from './tranformacion/Transformacion';
-import subtitulosSuba from './datos/subtitulosSuba.json';
-import subtitulosBosa from './datos/subtitulosBosa.json';
-import subtitulosCerroSeco from './datos/subtitulosCerroSeco.json';
-import subtitulosZuque from './datos/subtitulosZuque.json';
+import * as datosLugares from './datos/lugares';
+import { cargarImgs } from './ayudas';
+import { TImagenes, TLugar, TSubtitulo } from './tipos';
+import type { MeydaAnalyzer } from 'meyda/dist/esm/meyda-wa';
 
 const base: string = '/enflujo-espectros-bogota';
 const etiquetaTiempo: HTMLParagraphElement = document.getElementById('tiempo') as HTMLParagraphElement;
+const botonPausa: HTMLDivElement = document.getElementById('pausa') as HTMLDivElement;
 const contenedorSubtitulos: HTMLParagraphElement = document.getElementById('subtitulos') as HTMLParagraphElement;
 const lienzo: HTMLCanvasElement = document.getElementById('lienzo') as HTMLCanvasElement;
 const ctx = lienzo.getContext('2d') as CanvasRenderingContext2D;
@@ -31,20 +32,31 @@ const tBu = new Transformacion();
 let audioCtx: AudioContext;
 const empezarEn: number = 0;
 
-// Rutas de los audios
-const audioSuba: string = 'S1_paisones Suba RvdH_V1';
-const audioBosa: string = 'S2_paisones_Bosa_V3_norm01';
-const audioCerroSeco: string = 'S4_paisones_SC_CerroSeco_V1_norm01';
-const audioZuque: string = 'S3_paisones_Zuque_V3_norm01';
+let lugarElegido: string = 'suba';
+let animacionCorriendo = false;
 
-let audioElegido: string = audioSuba;
+const botonesAudios = document.querySelectorAll<HTMLLIElement>('.botonAudio');
 
-const botonSuba = document.getElementById('botonSuba');
-const botonBosa = document.getElementById('botonBosa') as HTMLLIElement;
-const botonZuque = document.getElementById('botonZuque');
-const botonCerroSeco = document.getElementById('botonCerroSeco');
+if (botonesAudios.length) {
+  botonesAudios.forEach((boton) => {
+    boton.addEventListener('click', () => {
+      const elegidoActualmente = document.querySelector('.elegido');
+      if (elegidoActualmente) elegidoActualmente.classList.remove('elegido');
+      boton.classList.add('elegido');
+      const { nombre } = boton.dataset;
+      if (nombre) {
+        botonPausa.innerText = '▐▐';
+        animacionCorriendo = true;
+        empezar(datosLugares[nombre]);
+        lugarElegido = nombre;
+      }
+    });
+  });
+}
 
-const botonesLugar = [botonSuba, botonBosa, botonZuque, botonCerroSeco];
+botonPausa.addEventListener('click', () => {
+  pausarReproducir();
+});
 
 // booleanos para mostrar elementos
 let copeton: boolean = false;
@@ -58,8 +70,6 @@ let abeja: boolean = false;
 let pasos: boolean = false;
 let risas: boolean = false;
 let arboloco: boolean = false;
-
-let nivel: number = 0;
 
 // Variables para contador de tiempo
 let segundos: number;
@@ -81,31 +91,34 @@ function mostrarTiempo() {
 
   if (!etiquetaTiempo) return;
   etiquetaTiempo.innerText = tiempo;
-
-  requestAnimationFrame(mostrarTiempo);
 }
 
-function mostrarSubtitulos(subtitulos) {
+function pausarReproducir() {
+  if (audioCtx.state === 'running') {
+    audioCtx.suspend();
+    botonPausa.classList.add('play');
+    botonPausa.innerText = '  ▶';
+    animacionCorriendo = false;
+  } else if (audioCtx.state === 'suspended') {
+    audioCtx.resume();
+    botonPausa.classList.remove('play');
+    botonPausa.innerText = '▐▐';
+    animacionCorriendo = true;
+  }
+}
+
+function mostrarSubtitulos(subtitulos: TSubtitulo[]) {
   if (!contenedorSubtitulos) return;
   subtitulos.forEach((elemento) => {
-    if (segundos >= elemento['tiempo-inicial']) {
+    if (segundos >= elemento.tiempoInicial) {
       contenedorSubtitulos.innerText = elemento.texto;
       contenedorSubtitulos.style.display = 'block';
     }
-    if (segundos > elemento['tiempo-final']) {
+    if (segundos > elemento.tiempoFinal) {
       contenedorSubtitulos.style.display = 'none';
       contenedorSubtitulos.innerText = '';
     }
   });
-}
-
-export function encontrarBins(frecuencia: number) {
-  const bins: number[] = [];
-  for (let i: number = 0; i <= 512; i++) {
-    bins.push(i * 43 + 20);
-  }
-  const i = bins.findIndex((f) => f > frecuencia);
-  return i;
 }
 
 function crearAnalizadorMeyda(contexto: AudioContext, fuente) {
@@ -123,11 +136,9 @@ function crearAnalizadorMeyda(contexto: AudioContext, fuente) {
 }
 
 export function revisarEstados(caracteristicas: MeydaFeaturesObject) {
-  const bin = encontrarBins(100);
   const { amplitudeSpectrum, zcr } = caracteristicas;
-  //  console.log(amplitudeSpectrum, zcr);
 
-  if (audioElegido === audioSuba) {
+  if (lugarElegido === 'suba') {
     abuela =
       segundos > 10.5 &&
       segundos <= 12 &&
@@ -147,7 +158,7 @@ export function revisarEstados(caracteristicas: MeydaFeaturesObject) {
     tingua_bogotana =
       segundos >= 87 &&
       segundos <= 99 &&
-      amplitudeSpectrum[bin] > 5 &&
+      amplitudeSpectrum[2] > 5 &&
       amplitudeSpectrum[78] < 3 &&
       amplitudeSpectrum[27] < 7 &&
       zcr < 170;
@@ -178,17 +189,8 @@ export function revisarEstados(caracteristicas: MeydaFeaturesObject) {
         amplitudeSpectrum[3] >= 36) ||
       (segundos > 144 && segundos < 149 && amplitudeSpectrum[2] >= 30 && amplitudeSpectrum[3] >= 30);
   }
-  nivel = caracteristicas.rms;
 }
 
-const imagenes: { [nombre: string]: { ruta: string; img: HTMLImageElement; ancho: number; alto: number } } = {
-  copeton: { ruta: `${base}/copeton.png`, img: new Image(), ancho: 0, alto: 0 },
-  abuela: { ruta: `${base}/abuela.png`, img: new Image(), ancho: 0, alto: 0 },
-  mirla: { ruta: `${base}/mirla.png`, img: new Image(), ancho: 0, alto: 0 },
-  pasos: { ruta: `${base}/pasos.png`, img: new Image(), ancho: 0, alto: 0 },
-  risas: { ruta: `${base}/risas.png`, img: new Image(), ancho: 0, alto: 0 },
-  arboloco: { ruta: `${base}/arboloco.png`, img: new Image(), ancho: 0, alto: 0 },
-};
 escalar();
 window.onresize = escalar;
 const t = new Transformacion();
@@ -196,91 +198,60 @@ t.transladar(0, 0)
   //.rotar(Math.PI / 4)
   .escalar(10, 1);
 
-async function cargarImgs(): Promise<void> {
-  return new Promise((resolver, rechazar) => {
-    let imagenesCargadas = 0;
-    const totalImgs = Object.keys(imagenes).length;
-    for (const nombre in imagenes) {
-      imagenes[nombre].img.onload = () => {
-        imagenesCargadas++;
-        imagenes[nombre].ancho = imagenes[nombre].img.naturalWidth;
-        imagenes[nombre].alto = imagenes[nombre].img.naturalHeight;
+let analizadorMeyda: MeydaAnalyzer;
+let fuente: AudioBufferSourceNode;
+let reloj = 0;
+let analizador: AnalyserNode;
 
-        if (imagenesCargadas === totalImgs) {
-          resolver();
-        }
-      };
+function crearContextoAudio() {
+  if (audioCtx) {
+    return;
+  }
 
-      imagenes[nombre].img.onerror = () => {
-        rechazar(`La imagen ${imagenes[nombre].ruta} no esta disponible`);
-      };
-      imagenes[nombre].img.src = imagenes[nombre].ruta;
-    }
-  });
-}
-
-let analizadorMeyda;
-let fuente;
-let animando;
-
-function elegirAudio(audio) {
-  audioElegido = audio;
-  botonesLugar.forEach((boton) => {
-    boton?.classList.toggle('elegido');
-  });
-}
-
-botonSuba?.addEventListener('click', async function () {
-  elegirAudio(audioSuba);
-});
-
-botonBosa.onclick = async () => {
-  fuente.stop();
-  borrarTodo();
-  cancelAnimationFrame(animando);
-  elegirAudio(audioBosa);
-
-  empezar();
-};
-
-botonCerroSeco?.addEventListener('click', async function () {
-  audioElegido = audioCerroSeco;
-  botonCerroSeco.classList.toggle('elegido');
-});
-botonZuque?.addEventListener('click', async function () {
-  audioElegido = audioZuque;
-  botonZuque.classList.toggle('elegido');
-});
-
-async function empezar() {
-  if (audioCargado) return;
-  const archivo = await fetch(`${base}/${audioElegido}.wav`).then((respuesta) => respuesta.arrayBuffer());
   audioCtx = new AudioContext();
+  analizador = audioCtx.createAnalyser();
+  analizador.fftSize = tamañoFFT;
+}
+
+async function empezar(lugar: TLugar) {
+  // if (audioCargado) return;
+  crearContextoAudio();
+
+  if (fuente) {
+    fuente.stop();
+    fuente.disconnect();
+    analizadorMeyda.stop();
+    cancelAnimationFrame(reloj);
+    escalar();
+  }
+
+  const archivo = await fetch(`${base}/${lugar.rutaAudio}`).then((respuesta) => respuesta.arrayBuffer());
   const audio = await audioCtx.decodeAudioData(archivo);
   fuente = new AudioBufferSourceNode(audioCtx);
-  fuente.buffer = audio;
-
   analizadorMeyda = crearAnalizadorMeyda(audioCtx, fuente);
-
-  const analizador = audioCtx.createAnalyser();
-  analizador.fftSize = tamañoFFT;
-
+  fuente.buffer = audio;
   fuente.connect(analizador);
   fuente.connect(audioCtx.destination);
-
-  audioCargado = true;
   fuente.start(0, empezarEn);
 
+  // audioCargado = true;
+
   try {
-    await cargarImgs();
-    inicio(analizador);
+    const imagenes: TImagenes = {};
+
+    lugar.imagenes.forEach((nombre) => {
+      imagenes[nombre] = { ruta: `${base}/${nombre}.png`, img: new Image(), ancho: 0, alto: 0 };
+    });
+
+    await cargarImgs(imagenes);
+    inicio(analizador, imagenes, lugar.subtitulos);
   } catch (error) {
     console.error(error);
   }
 }
 
 lienzo.onclick = async () => {
-  empezar();
+  pausarReproducir();
 };
 
 function borrarTodo() {
@@ -291,19 +262,21 @@ function borrarTodo() {
   ctx.fillRect(0, 0, dims.ancho, dims.alto);
 }
 
-function inicio(analizador: AnalyserNode) {
+function inicio(analizador: AnalyserNode, imagenes: TImagenes, subtitulos: TSubtitulo[]) {
   const tamañoDatos = analizador.frequencyBinCount;
   const datos = new Uint8Array(tamañoDatos);
   const datos2 = new Uint8Array(tamañoDatos);
 
-  mostrarTiempo();
-
-  animando = requestAnimationFrame(animar);
+  reloj = requestAnimationFrame(animar);
 
   borrarTodo();
 
   function animar() {
     if (!ctxExt || !ctxBarras || !ctxBu || !ctxMontaña) return;
+    reloj = requestAnimationFrame(animar);
+
+    if (!animacionCorriendo) return;
+    mostrarTiempo();
     /**
      * Borrar antes de pintar un nuevo fotograma
      */
@@ -319,8 +292,8 @@ function inicio(analizador: AnalyserNode) {
     analizador.getByteTimeDomainData(datos);
     analizador.getByteFrequencyData(datos2);
 
-    if (audioElegido === audioSuba) {
-      mostrarSubtitulos(subtitulosSuba);
+    if (subtitulos.length) {
+      mostrarSubtitulos(subtitulos);
     }
 
     // Mostrar imágenes
@@ -495,8 +468,6 @@ function inicio(analizador: AnalyserNode) {
     // ctx.setTransform(...t.matriz);
     // ctx.fillRect(0, 0, 50, 50);
     // ctx.resetTransform();
-
-    animando = requestAnimationFrame(animar);
   }
 }
 
@@ -527,7 +498,7 @@ function escalar() {
     ctx.save();
     ctx.fillStyle = 'white';
     ctx.font = 'bold 50px serif';
-    ctx.fillText('▶', centro.x - 30, centro.y);
+    //ctx.fillText('▶', centro.x - 30, centro.y);
     ctx.restore();
   } else {
     borrarTodo();

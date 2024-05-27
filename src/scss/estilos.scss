@@ -97,6 +97,24 @@ canvas {
   font-family: 'Courier New', Courier, monospace;
 }
 
+#pausa {
+  background-color: transparent;
+  position: absolute;
+  margin-left: 1em;
+  margin-top: 0;
+  top: 3em;
+  color: white;
+  cursor: pointer;
+  //font-size: 0.8em;
+
+  &.play {
+    font-family: 'Lucida Sans', 'Lucida Sans Regular', 'Lucida Grande', 'Lucida Sans Unicode', Geneva, Verdana,
+      sans-serif;
+    font-weight: bolder;
+    padding-left: 0.5em;
+  }
+}
+
 #subtitulos {
   display: none;
   position: absolute;
@@ -112,6 +130,7 @@ canvas {
 #menuAudios {
   position: absolute;
   right: 0;
+  top: 0.8em;
   background-color: transparent;
 }
 
