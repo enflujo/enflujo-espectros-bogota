@@ -1,32 +1,62 @@
 import Meyda, { MeydaFeaturesObject } from 'meyda';
 import './scss/estilos.scss';
 import Transformacion from './tranformacion/Transformacion';
-import subtitulos from './datos/subtitulos.json';
+import * as datosLugares from './datos/lugares';
+import { cargarImgs } from './ayudas';
+import { TImagenes, TLugar, TSubtitulo } from './tipos';
+import type { MeydaAnalyzer } from 'meyda/dist/esm/meyda-wa';
 
-let base = '/enflujo-espectros-bogota';
-const etiquetaTiempo = document.getElementById('tiempo');
-const contenedorSubtitulos = document.getElementById('subtitulos');
-const lienzo = document.getElementById('lienzo') as HTMLCanvasElement;
+const base: string = '/enflujo-espectros-bogota';
+const etiquetaTiempo: HTMLParagraphElement = document.getElementById('tiempo') as HTMLParagraphElement;
+const botonPausa: HTMLDivElement = document.getElementById('pausa') as HTMLDivElement;
+const contenedorSubtitulos: HTMLParagraphElement = document.getElementById('subtitulos') as HTMLParagraphElement;
+const lienzo: HTMLCanvasElement = document.getElementById('lienzo') as HTMLCanvasElement;
 const ctx = lienzo.getContext('2d') as CanvasRenderingContext2D;
-const lienzoExt = new OffscreenCanvas(0, 0);
-const lienzoBarras = new OffscreenCanvas(0, 0);
-const lienzoBu = new OffscreenCanvas(0, 0);
-const lienzoMontaña = new OffscreenCanvas(0, 0);
+const lienzoExt: OffscreenCanvas = new OffscreenCanvas(0, 0);
+const lienzoBarras: OffscreenCanvas = new OffscreenCanvas(0, 0);
+const lienzoBu: OffscreenCanvas = new OffscreenCanvas(0, 0);
+const lienzoMontaña: OffscreenCanvas = new OffscreenCanvas(0, 0);
 const ctxExt = lienzoExt.getContext('2d');
 const ctxBarras = lienzoBarras.getContext('2d');
 const ctxBu = lienzoBu.getContext('2d');
 const ctxMontaña = lienzoMontaña.getContext('2d');
-const dims = { ancho: 0, alto: 0, pasoX: 0 };
-const centro = { x: 0, y: 0 };
-const tamañoFFT = 2048;
-const cantidadPuntos = tamañoFFT / 2;
-let audioCargado = false;
-let pasoX = 0;
-let pasoY = 0;
-const pasoR = (2 * Math.PI) / cantidadPuntos;
+const dims: { ancho: number; alto: number; pasoX: number } = { ancho: 0, alto: 0, pasoX: 0 };
+const centro: { x: number; y: number } = { x: 0, y: 0 };
+const tamañoFFT: number = 2048;
+const cantidadPuntos: number = tamañoFFT / 2;
+let audioCargado: boolean = false;
+let pasoX: number = 0;
+let pasoY: number = 0;
+const pasoR: number = (2 * Math.PI) / cantidadPuntos;
 const tBu = new Transformacion();
 let audioCtx: AudioContext;
-const empezarEn = 0;
+const empezarEn: number = 0;
+
+let lugarElegido: string = 'suba';
+let animacionCorriendo = false;
+
+const botonesAudios = document.querySelectorAll<HTMLLIElement>('.botonAudio');
+
+if (botonesAudios.length) {
+  botonesAudios.forEach((boton) => {
+    boton.addEventListener('click', () => {
+      const elegidoActualmente = document.querySelector('.elegido');
+      if (elegidoActualmente) elegidoActualmente.classList.remove('elegido');
+      boton.classList.add('elegido');
+      const { nombre } = boton.dataset;
+      if (nombre) {
+        botonPausa.innerText = '▐▐';
+        animacionCorriendo = true;
+        empezar(datosLugares[nombre]);
+        lugarElegido = nombre;
+      }
+    });
+  });
+}
+
+botonPausa.addEventListener('click', () => {
+  pausarReproducir();
+});
 
 // booleanos para mostrar elementos
 let copeton: boolean = false;
@@ -41,53 +71,54 @@ let pasos: boolean = false;
 let risas: boolean = false;
 let arboloco: boolean = false;
 
-let nivel: number = 0;
-
 // Variables para contador de tiempo
 let segundos: number;
 
 function mostrarTiempo() {
   segundos = audioCtx.currentTime + empezarEn;
-  // console.log(segundos);
-  const h = Math.floor(segundos / 3600)
+
+  const h: string = Math.floor(segundos / 3600)
     .toString()
     .padStart(2, '0');
-  const m = Math.floor((segundos % 3600) / 60)
+  const m: string = Math.floor((segundos % 3600) / 60)
     .toString()
     .padStart(2, '0');
-  const s = Math.floor(segundos % 60)
+  const s: string = Math.floor(segundos % 60)
     .toString()
     .padStart(2, '0');
 
-  const tiempo = `${h}:${m}:${s}`;
+  const tiempo: string = `${h}:${m}:${s}`;
 
   if (!etiquetaTiempo) return;
   etiquetaTiempo.innerText = tiempo;
-
-  requestAnimationFrame(mostrarTiempo);
 }
 
-function mostrarSubtitulos() {
+function pausarReproducir() {
+  if (audioCtx.state === 'running') {
+    audioCtx.suspend();
+    botonPausa.classList.add('play');
+    botonPausa.innerText = '  ▶';
+    animacionCorriendo = false;
+  } else if (audioCtx.state === 'suspended') {
+    audioCtx.resume();
+    botonPausa.classList.remove('play');
+    botonPausa.innerText = '▐▐';
+    animacionCorriendo = true;
+  }
+}
+
+function mostrarSubtitulos(subtitulos: TSubtitulo[]) {
   if (!contenedorSubtitulos) return;
   subtitulos.forEach((elemento) => {
-    if (segundos >= elemento['tiempo-inicial']) {
+    if (segundos >= elemento.tiempoInicial) {
       contenedorSubtitulos.innerText = elemento.texto;
       contenedorSubtitulos.style.display = 'block';
     }
-    if (segundos > elemento['tiempo-final']) {
+    if (segundos > elemento.tiempoFinal) {
       contenedorSubtitulos.style.display = 'none';
       contenedorSubtitulos.innerText = '';
     }
   });
-}
-
-export function encontrarBins(frecuencia: number) {
-  const bins: number[] = [];
-  for (let i: number = 0; i <= 512; i++) {
-    bins.push(i * 43 + 20);
-  }
-  const i = bins.findIndex((f) => f > frecuencia);
-  return i;
 }
 
 function crearAnalizadorMeyda(contexto: AudioContext, fuente) {
@@ -105,70 +136,61 @@ function crearAnalizadorMeyda(contexto: AudioContext, fuente) {
 }
 
 export function revisarEstados(caracteristicas: MeydaFeaturesObject) {
-  const bin = encontrarBins(100);
   const { amplitudeSpectrum, zcr } = caracteristicas;
-  //  console.log(amplitudeSpectrum, zcr);
-  abuela =
-    segundos > 10.5 &&
-    segundos <= 12 &&
-    amplitudeSpectrum[16] > 2 &&
-    amplitudeSpectrum[14] >= 5 &&
-    amplitudeSpectrum[9] > 3; //amplitudeSpectrum[16] > 7 && amplitudeSpectrum[47] > 5 && zcr < 100 && zcr > 84;
 
-  // cambiar booleanos a verdadero para mostrar elementos si se cumplen condiciones de tiempo y frecuencia
-  copeton =
-    segundos > 8 &&
-    segundos < 43 &&
-    amplitudeSpectrum[92] >= 3 &&
-    amplitudeSpectrum[78] <= 2 &&
-    amplitudeSpectrum[27] < 3 &&
-    zcr > 150;
+  if (lugarElegido === 'suba') {
+    abuela =
+      segundos > 10.5 &&
+      segundos <= 12 &&
+      amplitudeSpectrum[16] > 2 &&
+      amplitudeSpectrum[14] >= 5 &&
+      amplitudeSpectrum[9] > 3; //amplitudeSpectrum[16] > 7 && amplitudeSpectrum[47] > 5 && zcr < 100 && zcr > 84;
 
-  tingua_bogotana =
-    segundos >= 87 &&
-    segundos <= 99 &&
-    amplitudeSpectrum[bin] > 5 &&
-    amplitudeSpectrum[78] < 3 &&
-    amplitudeSpectrum[27] < 7 &&
-    zcr < 170;
-  tingua_azul =
-    (segundos >= 78.1 && segundos <= 78.2) ||
-    (segundos >= 80 && segundos <= 88 && amplitudeSpectrum[57] >= 0.1 && amplitudeSpectrum[58] >= 0.5 && zcr < 170);
-  mosca = (segundos >= 119.5 && segundos < 120) || (segundos === 163 && amplitudeSpectrum[2] > 3);
-  abejorro = segundos >= 161 && segundos < 162;
-  abeja = segundos >= 71 && segundos < 71.5;
-  pasos =
-    segundos === 124 ||
-    (segundos > 124 &&
-      segundos < 137 &&
-      amplitudeSpectrum[1] > 20 &&
-      amplitudeSpectrum[2] > 30 &&
-      amplitudeSpectrum[3] > 30);
-  risas =
-    segundos > 157 &&
-    segundos < 160 &&
-    amplitudeSpectrum[8] >= 3.6 &&
-    amplitudeSpectrum[7] >= 3.2 &&
-    amplitudeSpectrum[10] >= 2;
-  arboloco =
-    (segundos > 124 &&
-      segundos < 143 &&
-      amplitudeSpectrum[1] >= 23 &&
-      amplitudeSpectrum[2] >= 40 &&
-      amplitudeSpectrum[3] >= 36) ||
-    (segundos > 144 && segundos < 149 && amplitudeSpectrum[2] >= 30 && amplitudeSpectrum[3] >= 30);
+    // cambiar booleanos a verdadero para mostrar elementos si se cumplen condiciones de tiempo y frecuencia
+    copeton =
+      segundos > 8 &&
+      segundos < 43 &&
+      amplitudeSpectrum[92] >= 3 &&
+      amplitudeSpectrum[78] <= 2 &&
+      amplitudeSpectrum[27] < 3 &&
+      zcr > 150;
 
-  nivel = caracteristicas.rms;
+    tingua_bogotana =
+      segundos >= 87 &&
+      segundos <= 99 &&
+      amplitudeSpectrum[2] > 5 &&
+      amplitudeSpectrum[78] < 3 &&
+      amplitudeSpectrum[27] < 7 &&
+      zcr < 170;
+    tingua_azul =
+      (segundos >= 78.1 && segundos <= 78.2) ||
+      (segundos >= 80 && segundos <= 88 && amplitudeSpectrum[57] >= 0.1 && amplitudeSpectrum[58] >= 0.5 && zcr < 170);
+    mosca = (segundos >= 119.5 && segundos < 120) || (segundos === 163 && amplitudeSpectrum[2] > 3);
+    abejorro = segundos >= 161 && segundos < 162;
+    abeja = segundos >= 71 && segundos < 71.5;
+    pasos =
+      segundos === 124 ||
+      (segundos > 124 &&
+        segundos < 137 &&
+        amplitudeSpectrum[1] > 20 &&
+        amplitudeSpectrum[2] > 30 &&
+        amplitudeSpectrum[3] > 30);
+    risas =
+      segundos > 157 &&
+      segundos < 160 &&
+      amplitudeSpectrum[8] >= 3.6 &&
+      amplitudeSpectrum[7] >= 3.2 &&
+      amplitudeSpectrum[10] >= 2;
+    arboloco =
+      (segundos > 124 &&
+        segundos < 143 &&
+        amplitudeSpectrum[1] >= 23 &&
+        amplitudeSpectrum[2] >= 40 &&
+        amplitudeSpectrum[3] >= 36) ||
+      (segundos > 144 && segundos < 149 && amplitudeSpectrum[2] >= 30 && amplitudeSpectrum[3] >= 30);
+  }
 }
 
-const imagenes: { [nombre: string]: { ruta: string; img: HTMLImageElement; ancho: number; alto: number } } = {
-  copeton: { ruta: `${base}/copeton.png`, img: new Image(), ancho: 0, alto: 0 },
-  abuela: { ruta: `${base}/abuela.png`, img: new Image(), ancho: 0, alto: 0 },
-  mirla: { ruta: `${base}/mirla.png`, img: new Image(), ancho: 0, alto: 0 },
-  pasos: { ruta: `${base}/pasos.png`, img: new Image(), ancho: 0, alto: 0 },
-  risas: { ruta: `${base}/risas.png`, img: new Image(), ancho: 0, alto: 0 },
-  arboloco: { ruta: `${base}/arboloco.png`, img: new Image(), ancho: 0, alto: 0 },
-};
 escalar();
 window.onresize = escalar;
 const t = new Transformacion();
@@ -176,76 +198,85 @@ t.transladar(0, 0)
   //.rotar(Math.PI / 4)
   .escalar(10, 1);
 
-async function cargarImgs(): Promise<void> {
-  return new Promise((resolver, rechazar) => {
-    let imagenesCargadas = 0;
-    const totalImgs = Object.keys(imagenes).length;
-    for (const nombre in imagenes) {
-      imagenes[nombre].img.onload = () => {
-        imagenesCargadas++;
-        imagenes[nombre].ancho = imagenes[nombre].img.naturalWidth;
-        imagenes[nombre].alto = imagenes[nombre].img.naturalHeight;
+let analizadorMeyda: MeydaAnalyzer;
+let fuente: AudioBufferSourceNode;
+let reloj = 0;
+let analizador: AnalyserNode;
 
-        if (imagenesCargadas === totalImgs) {
-          resolver();
-        }
-      };
+function crearContextoAudio() {
+  if (audioCtx) {
+    return;
+  }
 
-      imagenes[nombre].img.onerror = () => {
-        rechazar(`La imagen ${imagenes[nombre].ruta} no esta disponible`);
-      };
-      imagenes[nombre].img.src = imagenes[nombre].ruta;
-    }
-  });
+  audioCtx = new AudioContext();
+  analizador = audioCtx.createAnalyser();
+  analizador.fftSize = tamañoFFT;
 }
 
-let analizadorMeyda;
+async function empezar(lugar: TLugar) {
+  // if (audioCargado) return;
+  crearContextoAudio();
 
-lienzo.onclick = async () => {
-  if (audioCargado) return;
-  const archivo = await fetch(`${base}/S1_paisones Suba RvdH_V1.wav`).then((respuesta) => respuesta.arrayBuffer());
-  audioCtx = new AudioContext();
+  if (fuente) {
+    fuente.stop();
+    fuente.disconnect();
+    analizadorMeyda.stop();
+    cancelAnimationFrame(reloj);
+    escalar();
+  }
+
+  const archivo = await fetch(`${base}/${lugar.rutaAudio}`).then((respuesta) => respuesta.arrayBuffer());
   const audio = await audioCtx.decodeAudioData(archivo);
-  const fuente = new AudioBufferSourceNode(audioCtx);
-  fuente.buffer = audio;
-
+  fuente = new AudioBufferSourceNode(audioCtx);
   analizadorMeyda = crearAnalizadorMeyda(audioCtx, fuente);
-
-  const analizador = audioCtx.createAnalyser();
-  analizador.fftSize = tamañoFFT;
-
+  fuente.buffer = audio;
   fuente.connect(analizador);
   fuente.connect(audioCtx.destination);
-
-  audioCargado = true;
   fuente.start(0, empezarEn);
 
+  // audioCargado = true;
+
   try {
-    await cargarImgs();
-    inicio(analizador);
+    const imagenes: TImagenes = {};
+
+    lugar.imagenes.forEach((nombre) => {
+      imagenes[nombre] = { ruta: `${base}/${nombre}.png`, img: new Image(), ancho: 0, alto: 0 };
+    });
+
+    await cargarImgs(imagenes);
+    inicio(analizador, imagenes, lugar.subtitulos);
   } catch (error) {
     console.error(error);
   }
+}
+
+lienzo.onclick = async () => {
+  pausarReproducir();
 };
 
 function borrarTodo() {
+  if (!contenedorSubtitulos) return;
+  contenedorSubtitulos.innerText = '';
+  contenedorSubtitulos.style.display = 'none';
   ctx.fillStyle = 'pink';
   ctx.fillRect(0, 0, dims.ancho, dims.alto);
 }
 
-function inicio(analizador: AnalyserNode) {
+function inicio(analizador: AnalyserNode, imagenes: TImagenes, subtitulos: TSubtitulo[]) {
   const tamañoDatos = analizador.frequencyBinCount;
   const datos = new Uint8Array(tamañoDatos);
   const datos2 = new Uint8Array(tamañoDatos);
 
-  mostrarTiempo();
-
-  requestAnimationFrame(animar);
+  reloj = requestAnimationFrame(animar);
 
   borrarTodo();
 
   function animar() {
     if (!ctxExt || !ctxBarras || !ctxBu || !ctxMontaña) return;
+    reloj = requestAnimationFrame(animar);
+
+    if (!animacionCorriendo) return;
+    mostrarTiempo();
     /**
      * Borrar antes de pintar un nuevo fotograma
      */
@@ -261,7 +292,9 @@ function inicio(analizador: AnalyserNode) {
     analizador.getByteTimeDomainData(datos);
     analizador.getByteFrequencyData(datos2);
 
-    mostrarSubtitulos();
+    if (subtitulos.length) {
+      mostrarSubtitulos(subtitulos);
+    }
 
     // Mostrar imágenes
     if (copeton) {
@@ -345,8 +378,6 @@ function inicio(analizador: AnalyserNode) {
       ctxExt.setTransform(1, 0, 0, 1, 0, 0);
       ctxExt.fillStyle = `rgba(${(Math.random() * 200) | 0}, ${(puntoF / 2) | 50}, ${(puntoF / 2) | 200} )`; //`rgb(${(Math.random() * 255) | 0}, ${(Math.random() * 255) | 0}, ${(Math.random() * 255) | 0})`;
       ctxExt.fillRect(dims.ancho, i * pasoY, -1, pasoY);
-      //y2 * sin(angle) + x2 * cos(angle)
-      // y2 * cos(angle) - x2 * sin(angle)
 
       const xBu = puntoF * Math.acos(pasoR * i) + centro.x;
       const yBu = puntoF * Math.sin(pasoR * i) + centro.y;
@@ -437,8 +468,6 @@ function inicio(analizador: AnalyserNode) {
     // ctx.setTransform(...t.matriz);
     // ctx.fillRect(0, 0, 50, 50);
     // ctx.resetTransform();
-
-    requestAnimationFrame(animar);
   }
 }
 
@@ -469,7 +498,7 @@ function escalar() {
     ctx.save();
     ctx.fillStyle = 'white';
     ctx.font = 'bold 50px serif';
-    ctx.fillText('▶', centro.x - 30, centro.y);
+    //ctx.fillText('▶', centro.x - 30, centro.y);
     ctx.restore();
   } else {
     borrarTodo();

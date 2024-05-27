@@ -92,9 +92,27 @@ canvas {
 
 #tiempo {
   position: absolute;
-  color: #301a72;
+  color: white;
   margin-left: 1em;
   font-family: 'Courier New', Courier, monospace;
+}
+
+#pausa {
+  background-color: transparent;
+  position: absolute;
+  margin-left: 1em;
+  margin-top: 0;
+  top: 3em;
+  color: white;
+  cursor: pointer;
+  //font-size: 0.8em;
+
+  &.play {
+    font-family: 'Lucida Sans', 'Lucida Sans Regular', 'Lucida Grande', 'Lucida Sans Unicode', Geneva, Verdana,
+      sans-serif;
+    font-weight: bolder;
+    padding-left: 0.5em;
+  }
 }
 
 #subtitulos {
@@ -107,4 +125,38 @@ canvas {
   bottom: 10%;
   font-family: 'Courier New', Courier, monospace;
   left: 43vw;
+}
+
+#menuAudios {
+  position: absolute;
+  right: 0;
+  top: 0.8em;
+  background-color: transparent;
+}
+
+#listaAudios {
+  display: flex;
+  justify-content: space-around;
+  padding: 0;
+  margin: 0.5em;
+
+  li {
+    font-family: 'Courier New', Courier, monospace;
+    list-style: none;
+    padding: 0.5em;
+    margin-right: 1em;
+    color: white;
+    border: #dedbe7b3 1px solid;
+    border-radius: 5px;
+    cursor: pointer;
+
+    &:hover {
+      background-color: rgba(255, 255, 255, 0.5);
+      color: #301a72;
+    }
+
+    &.elegido {
+      border: #dedbe7ff 2px solid;
+    }
+  }
 }
