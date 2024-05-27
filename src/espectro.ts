@@ -3,7 +3,7 @@ import './scss/estilos.scss';
 import Transformacion from './tranformacion/Transformacion';
 import subtitulos from './datos/subtitulos.json';
 
-let base = '/enflujo-espectros-bogota';
+const base = '/enflujo-espectros-bogota';
 const etiquetaTiempo = document.getElementById('tiempo');
 const contenedorSubtitulos = document.getElementById('subtitulos');
 const lienzo = document.getElementById('lienzo') as HTMLCanvasElement;
@@ -200,10 +200,29 @@ async function cargarImgs(): Promise<void> {
 }
 
 let analizadorMeyda;
+let audioElegido: string = 'S1_paisones Suba RvdH_V1';
+
+const botonSuba = document.getElementById('botonSuba');
+const botonBosa = document.getElementById('botonBosa');
+const botonZuque = document.getElementById('botonZuque');
+const botonCerroSeco = document.getElementById('botonCerroSeco');
+
+botonSuba?.addEventListener('click', async function () {
+  audioElegido = 'S1_paisones Suba RvdH_V1';
+});
+botonBosa?.addEventListener('click', async function () {
+  audioElegido = 'S2_paisones_Bosa_V3_norm01';
+});
+botonZuque?.addEventListener('click', async function () {
+  audioElegido = 'S3_paisones_Zuque_V3_norm01';
+});
+botonCerroSeco?.addEventListener('click', async function () {
+  audioElegido = 'S4_paisones_SC_CerroSeco_V1_norm01';
+});
 
 lienzo.onclick = async () => {
   if (audioCargado) return;
-  const archivo = await fetch(`${base}/S1_paisones Suba RvdH_V1.wav`).then((respuesta) => respuesta.arrayBuffer());
+  const archivo = await fetch(`${base}/${audioElegido}.wav`).then((respuesta) => respuesta.arrayBuffer());
   audioCtx = new AudioContext();
   const audio = await audioCtx.decodeAudioData(archivo);
   const fuente = new AudioBufferSourceNode(audioCtx);
