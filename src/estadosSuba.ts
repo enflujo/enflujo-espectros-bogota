@@ -11,6 +11,8 @@ export default (
     espectroAmplitud[14] > 4.9 &&
     espectroAmplitud[9] > 3; //espectroAmplitud[16] > 7 && espectroAmplitud[47] > 5 && zcr < 100 && zcr > 84;
 
+  estados.aguaFuego = (segundos > 2 && segundos < 2.02) || (segundos > 5 && segundos < 5.02);
+
   estados.avion = espectroAmplitud[1] > 5 && segundos > 80.9 && segundos < 88;
 
   estados.biciMotor =

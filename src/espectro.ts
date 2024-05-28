@@ -57,6 +57,7 @@ let lugarElegido = 'suba';
 let animacionCorriendo = false;
 // booleanos para mostrar elementos
 const estados = {
+  aguaFuego: false,
   abeja: false,
   abejorro: false,
   abuela: false,
@@ -253,6 +254,16 @@ function inicio(analizador: AnalyserNode, imagenes: TImagenes, subtitulos: TSubt
       );
     }
 
+    if (estados.aguaFuego) {
+      ctxExt.drawImage(
+        imagenes.aguaFuego.img,
+        ancho - 250,
+        (datosFrec[3] * alto) / 255,
+        imagenes.aguaFuego.ancho / 10,
+        imagenes.aguaFuego.alto / 10
+      );
+    }
+
     if (estados.mirla) {
       ctxExt.drawImage(
         imagenes.mirla.img,
@@ -305,7 +316,7 @@ function inicio(analizador: AnalyserNode, imagenes: TImagenes, subtitulos: TSubt
 
     if (estados.avion) {
       ctxExt.drawImage(
-        imagenes.avion_der.img,
+        imagenes.avionDer.img,
         ancho - 700,
         (datosFrec[1] * alto) / 255 - alto * 0.7,
         imagenes.avion_der.ancho / 10,
