@@ -68,7 +68,7 @@ export default (
     (segundos > 148.5 && segundos < 148.6) ||
     (segundos > 150.5 && segundos < 150.6) ||
     (segundos > 152.5 && segundos < 152.6) ||
-    segundos > 154.5 && segundos < 154.6) ;
+    (segundos > 154.5 && segundos < 154.6);
 
   estados.risas =
     segundos > 157 &&
