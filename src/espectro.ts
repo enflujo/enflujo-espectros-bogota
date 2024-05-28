@@ -71,6 +71,7 @@ const estados = {
   mirla: false,
   mosca: false,
   pasos: false,
+  perchas: false,
   risas: false,
   tinguaBogotana: false,
   tinguaAzul: false,
@@ -284,6 +285,16 @@ function inicio(analizador: AnalyserNode, imagenes: TImagenes, subtitulos: TSubt
       );
     }
 
+    if (estados.perchas) {
+      ctxExt.drawImage(
+        imagenes.perchas.img,
+        ancho - ancho / 2,
+        alto / 255 - 100,
+        imagenes.perchas.ancho / 5,
+        imagenes.perchas.alto / 5
+      );
+    }
+
     if (estados.risas) {
       ctxExt.drawImage(
         imagenes.risas.img,
@@ -327,8 +338,8 @@ function inicio(analizador: AnalyserNode, imagenes: TImagenes, subtitulos: TSubt
     if (estados.biciMotor) {
       ctxExt.drawImage(
         imagenes.biciMotor.img,
-        ancho - 700,
-        (datosFrec[1] * alto) / 255 - alto * 0.4,
+        ancho - ancho / 2,
+        (datosFrec[1] * alto) / 255 - alto * 0.2,
         imagenes.biciMotor.ancho / 10,
         imagenes.biciMotor.alto / 10
       );

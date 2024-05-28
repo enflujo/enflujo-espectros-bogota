@@ -62,6 +62,14 @@ export default (
       espectroAmplitud[2] > 30 &&
       espectroAmplitud[3] > 30);
 
+  estados.perchas =
+    (segundos > 144.5 && segundos < 144.6) ||
+    (segundos > 146.5 && segundos < 146.6) ||
+    (segundos > 148.5 && segundos < 148.6) ||
+    (segundos > 150.5 && segundos < 150.6) ||
+    (segundos > 152.5 && segundos < 152.6) ||
+    segundos > 154.5 && segundos < 154.6) ;
+
   estados.risas =
     segundos > 157 &&
     segundos < 160 &&
