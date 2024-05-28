@@ -1,12 +1,16 @@
-import Meyda, { MeydaFeaturesObject } from 'meyda';
 import './scss/estilos.scss';
-import Transformacion from './tranformacion/Transformacion';
-import * as datosLugares from './datos/lugares';
-import { cargarImgs } from './ayudas';
-import { TImagenes, TLugar, TSubtitulo } from './tipos';
-import type { MeydaAnalyzer } from 'meyda/dist/esm/meyda-wa';
 
-const base: string = '/enflujo-espectros-bogota';
+import Meyda, { type MeydaFeaturesObject } from 'meyda';
+import type { MeydaAnalyzer } from 'meyda/dist/esm/meyda-wa';
+import * as datosLugares from './datos/lugares';
+import { cargarImgs, reducirDecimales } from './ayudas';
+import type { TImagenes, TLugar, TSubtitulo } from './tipos';
+import estadosSuba from './estadosSuba';
+
+/**
+ * Elementos de HTML
+ */
+const botonesAudios = document.querySelectorAll<HTMLLIElement>('.botonAudio');
 const etiquetaTiempo: HTMLParagraphElement = document.getElementById('tiempo') as HTMLParagraphElement;
 const botonPausa: HTMLDivElement = document.getElementById('pausa') as HTMLDivElement;
 const contenedorSubtitulos: HTMLParagraphElement = document.getElementById('subtitulos') as HTMLParagraphElement;
@@ -15,81 +19,70 @@ const ctx = lienzo.getContext('2d') as CanvasRenderingContext2D;
 const lienzoExt: OffscreenCanvas = new OffscreenCanvas(0, 0);
 const lienzoBarras: OffscreenCanvas = new OffscreenCanvas(0, 0);
 const lienzoBu: OffscreenCanvas = new OffscreenCanvas(0, 0);
-const lienzoMontaña: OffscreenCanvas = new OffscreenCanvas(0, 0);
+// const lienzoMontaña: OffscreenCanvas = new OffscreenCanvas(0, 0);
 const ctxExt = lienzoExt.getContext('2d');
 const ctxBarras = lienzoBarras.getContext('2d');
 const ctxBu = lienzoBu.getContext('2d');
-const ctxMontaña = lienzoMontaña.getContext('2d');
+// const ctxMontaña = lienzoMontaña.getContext('2d');
+
+/**
+ * Configuración general
+ */
+let empezarEn = 0;
+const base = import.meta.env.BASE_URL;
+const tamañoFFT = 2048;
+const cantidadPuntos = tamañoFFT / 2;
+const pasoR = (2 * Math.PI) / cantidadPuntos;
+
+/**
+ *
+ */
+let analizadorMeyda: MeydaAnalyzer;
+let fuente: AudioBufferSourceNode;
+let analizador: AnalyserNode;
+
+/**
+ * Variables globales
+ */
 const dims: { ancho: number; alto: number; pasoX: number } = { ancho: 0, alto: 0, pasoX: 0 };
 const centro: { x: number; y: number } = { x: 0, y: 0 };
-const tamañoFFT: number = 2048;
-const cantidadPuntos: number = tamañoFFT / 2;
-let audioCargado: boolean = false;
-let pasoX: number = 0;
-let pasoY: number = 0;
-const pasoR: number = (2 * Math.PI) / cantidadPuntos;
-const tBu = new Transformacion();
+let reloj = 0;
+let segundos = 0;
+let pasoX = 0;
+let pasoY = 0;
 let audioCtx: AudioContext;
-const empezarEn: number = 0;
-
-let lugarElegido: string = 'suba';
+let lugarElegido = 'suba';
 let animacionCorriendo = false;
-
-const botonesAudios = document.querySelectorAll<HTMLLIElement>('.botonAudio');
-
-if (botonesAudios.length) {
-  botonesAudios.forEach((boton) => {
-    boton.addEventListener('click', () => {
-      const elegidoActualmente = document.querySelector('.elegido');
-      if (elegidoActualmente) elegidoActualmente.classList.remove('elegido');
-      boton.classList.add('elegido');
-      const { nombre } = boton.dataset;
-      if (nombre) {
-        botonPausa.innerText = '▐▐';
-        animacionCorriendo = true;
-        empezar(datosLugares[nombre]);
-        lugarElegido = nombre;
-      }
-    });
-  });
-}
-
-botonPausa.addEventListener('click', () => {
-  pausarReproducir();
-});
-
 // booleanos para mostrar elementos
-let copeton: boolean = false;
-let tingua_bogotana: boolean = false;
-let tingua_azul: boolean = false;
-let abuela: boolean = false;
-let mirla: boolean = false;
-let mosca: boolean = false;
-let abejorro: boolean = false;
-let abeja: boolean = false;
-let pasos: boolean = false;
-let risas: boolean = false;
-let arboloco: boolean = false;
+const estados = {
+  copeton: false,
+  tingua_bogotana: false,
+  tingua_azul: false,
+  abuela: false,
+  mirla: false,
+  mosca: false,
+  abejorro: false,
+  abeja: false,
+  pasos: false,
+  risas: false,
+  arboloco: false,
+};
 
-// Variables para contador de tiempo
-let segundos: number;
+/**
+ * Pintar estado inicial y definir eventos
+ */
+escalar();
+lienzo.onclick = pausarReproducir;
+window.onresize = escalar;
 
 function mostrarTiempo() {
-  segundos = audioCtx.currentTime + empezarEn;
-
-  const h: string = Math.floor(segundos / 3600)
-    .toString()
-    .padStart(2, '0');
-  const m: string = Math.floor((segundos % 3600) / 60)
-    .toString()
-    .padStart(2, '0');
-  const s: string = Math.floor(segundos % 60)
-    .toString()
-    .padStart(2, '0');
-
-  const tiempo: string = `${h}:${m}:${s}`;
-
   if (!etiquetaTiempo) return;
+  segundos = audioCtx.currentTime - empezarEn;
+
+  const h = reducirDecimales(segundos / 3600);
+  const m = reducirDecimales((segundos % 3600) / 60);
+  const s = reducirDecimales(segundos % 60);
+  const tiempo = `${h}:${m}:${s}`;
   etiquetaTiempo.innerText = tiempo;
 }
 
@@ -121,13 +114,13 @@ function mostrarSubtitulos(subtitulos: TSubtitulo[]) {
   });
 }
 
-function crearAnalizadorMeyda(contexto: AudioContext, fuente) {
+function crearAnalizadorMeyda(contexto: AudioContext, fuente: AudioBufferSourceNode) {
   const analizadorMeyda = Meyda.createMeydaAnalyzer({
     audioContext: contexto,
     source: fuente,
-    bufferSize: 1024,
+    bufferSize: cantidadPuntos,
     sampleRate: 44100,
-    featureExtractors: ['amplitudeSpectrum', 'zcr', 'rms'],
+    featureExtractors: ['amplitudeSpectrum', 'zcr'],
     callback: revisarEstados,
   });
 
@@ -135,73 +128,13 @@ function crearAnalizadorMeyda(contexto: AudioContext, fuente) {
   return analizadorMeyda;
 }
 
-export function revisarEstados(caracteristicas: MeydaFeaturesObject) {
+function revisarEstados(caracteristicas: MeydaFeaturesObject) {
   const { amplitudeSpectrum, zcr } = caracteristicas;
 
   if (lugarElegido === 'suba') {
-    abuela =
-      segundos > 10.5 &&
-      segundos <= 12 &&
-      amplitudeSpectrum[16] > 2 &&
-      amplitudeSpectrum[14] >= 5 &&
-      amplitudeSpectrum[9] > 3; //amplitudeSpectrum[16] > 7 && amplitudeSpectrum[47] > 5 && zcr < 100 && zcr > 84;
-
-    // cambiar booleanos a verdadero para mostrar elementos si se cumplen condiciones de tiempo y frecuencia
-    copeton =
-      segundos > 8 &&
-      segundos < 43 &&
-      amplitudeSpectrum[92] >= 3 &&
-      amplitudeSpectrum[78] <= 2 &&
-      amplitudeSpectrum[27] < 3 &&
-      zcr > 150;
-
-    tingua_bogotana =
-      segundos >= 87 &&
-      segundos <= 99 &&
-      amplitudeSpectrum[2] > 5 &&
-      amplitudeSpectrum[78] < 3 &&
-      amplitudeSpectrum[27] < 7 &&
-      zcr < 170;
-    tingua_azul =
-      (segundos >= 78.1 && segundos <= 78.2) ||
-      (segundos >= 80 && segundos <= 88 && amplitudeSpectrum[57] >= 0.1 && amplitudeSpectrum[58] >= 0.5 && zcr < 170);
-    mosca = (segundos >= 119.5 && segundos < 120) || (segundos === 163 && amplitudeSpectrum[2] > 3);
-    abejorro = segundos >= 161 && segundos < 162;
-    abeja = segundos >= 71 && segundos < 71.5;
-    pasos =
-      segundos === 124 ||
-      (segundos > 124 &&
-        segundos < 137 &&
-        amplitudeSpectrum[1] > 20 &&
-        amplitudeSpectrum[2] > 30 &&
-        amplitudeSpectrum[3] > 30);
-    risas =
-      segundos > 157 &&
-      segundos < 160 &&
-      amplitudeSpectrum[8] >= 3.6 &&
-      amplitudeSpectrum[7] >= 3.2 &&
-      amplitudeSpectrum[10] >= 2;
-    arboloco =
-      (segundos > 124 &&
-        segundos < 143 &&
-        amplitudeSpectrum[1] >= 23 &&
-        amplitudeSpectrum[2] >= 40 &&
-        amplitudeSpectrum[3] >= 36) ||
-      (segundos > 144 && segundos < 149 && amplitudeSpectrum[2] >= 30 && amplitudeSpectrum[3] >= 30);
+    estadosSuba(estados, segundos, amplitudeSpectrum, zcr);
   }
 }
-
-escalar();
-window.onresize = escalar;
-const t = new Transformacion();
-t.transladar(0, 0)
-  //.rotar(Math.PI / 4)
-  .escalar(10, 1);
-
-let analizadorMeyda: MeydaAnalyzer;
-let fuente: AudioBufferSourceNode;
-let reloj = 0;
-let analizador: AnalyserNode;
 
 function crearContextoAudio() {
   if (audioCtx) {
@@ -214,7 +147,6 @@ function crearContextoAudio() {
 }
 
 async function empezar(lugar: TLugar) {
-  // if (audioCargado) return;
   crearContextoAudio();
 
   if (fuente) {
@@ -232,9 +164,8 @@ async function empezar(lugar: TLugar) {
   fuente.buffer = audio;
   fuente.connect(analizador);
   fuente.connect(audioCtx.destination);
-  fuente.start(0, empezarEn);
-
-  // audioCargado = true;
+  fuente.start(0);
+  empezarEn = audioCtx.currentTime;
 
   try {
     const imagenes: TImagenes = {};
@@ -250,10 +181,6 @@ async function empezar(lugar: TLugar) {
   }
 }
 
-lienzo.onclick = async () => {
-  pausarReproducir();
-};
-
 function borrarTodo() {
   if (!contenedorSubtitulos) return;
   contenedorSubtitulos.innerText = '';
@@ -264,98 +191,96 @@ function borrarTodo() {
 
 function inicio(analizador: AnalyserNode, imagenes: TImagenes, subtitulos: TSubtitulo[]) {
   const tamañoDatos = analizador.frequencyBinCount;
-  const datos = new Uint8Array(tamañoDatos);
-  const datos2 = new Uint8Array(tamañoDatos);
+  const datosTiempo = new Uint8Array(tamañoDatos);
+  const datosFrec = new Uint8Array(tamañoDatos);
 
   reloj = requestAnimationFrame(animar);
 
   borrarTodo();
 
   function animar() {
-    if (!ctxExt || !ctxBarras || !ctxBu || !ctxMontaña) return;
+    if (!ctxExt || !ctxBarras || !ctxBu) return;
     reloj = requestAnimationFrame(animar);
 
     if (!animacionCorriendo) return;
     mostrarTiempo();
+
+    /** Extraer datos */
+    analizador.getByteTimeDomainData(datosTiempo);
+    analizador.getByteFrequencyData(datosFrec);
+    const { ancho, alto } = dims;
+
     /**
      * Borrar antes de pintar un nuevo fotograma
      */
     ctx.fillStyle = 'pink';
-    ctx.fillRect(0, 0, dims.ancho, dims.alto);
-    ctxBarras.clearRect(0, 0, dims.ancho, dims.alto);
-    ctxBu.clearRect(0, 0, dims.ancho, dims.alto);
-    ctxMontaña.clearRect(0, 0, dims.ancho, dims.alto);
-
-    // analizador.getFloatFrequencyData(datos);
-
-    /** Extraer datos */
-    analizador.getByteTimeDomainData(datos);
-    analizador.getByteFrequencyData(datos2);
+    ctx.fillRect(0, 0, ancho, alto);
+    ctxBarras.clearRect(0, 0, ancho, alto);
+    ctxBu.clearRect(0, 0, ancho, alto);
+    // ctxMontaña.clearRect(0, 0, dims.ancho, dims.alto);
 
     if (subtitulos.length) {
       mostrarSubtitulos(subtitulos);
     }
 
     // Mostrar imágenes
-    if (copeton) {
+    if (estados.copeton) {
       ctxExt.drawImage(
         imagenes.copeton.img,
-        dims.ancho - 240,
-        (Math.random() * dims.alto) / 2 - 50,
-        datos2[93] * 3,
-        datos2[93] * 3
+        ancho - 240,
+        (Math.random() * alto) / 2 - 50,
+        datosFrec[93] * 3,
+        datosFrec[93] * 3
       );
       ctxExt.font = '30px serif';
-      ctxExt.fillText('copetón', dims.ancho - 200, (datos2[93] * dims.alto) / 255);
-      ctxExt.strokeStyle = '#feff5d';
-      ctxExt.beginPath();
+      ctxExt.fillText('copetón', ancho - 200, (datosFrec[93] * alto) / 255);
     }
 
-    if (abuela) {
+    if (estados.abuela) {
       ctxExt.drawImage(
         imagenes.abuela.img,
-        dims.ancho - 250,
-        (datos2[98] * dims.alto) / 255,
+        ancho - 250,
+        (datosFrec[98] * alto) / 255,
         imagenes.abuela.ancho / 16,
         imagenes.abuela.alto / 16
       );
     }
 
-    if (mirla) {
+    if (estados.mirla) {
       ctxExt.drawImage(
         imagenes.mirla.img,
-        dims.ancho - 250,
-        (datos2[98] * dims.alto) / 255,
+        ancho - 250,
+        (datosFrec[98] * alto) / 255,
         imagenes.mirla.ancho / 14,
         imagenes.mirla.alto / 14
       );
     }
 
-    if (pasos) {
+    if (estados.pasos) {
       ctxExt.drawImage(
         imagenes.pasos.img,
-        dims.ancho - 400,
-        (datos2[93] * dims.alto) / 255 - 200,
+        ancho - 400,
+        (datosFrec[93] * alto) / 255 - 200,
         imagenes.pasos.ancho / 5,
         imagenes.pasos.alto / 5
       );
     }
 
-    if (risas) {
+    if (estados.risas) {
       ctxExt.drawImage(
         imagenes.risas.img,
-        dims.ancho - 350,
-        (datos2[6] * dims.alto) / 255 - dims.alto / 1.1,
+        ancho - 350,
+        (datosFrec[6] * alto) / 255 - alto / 1.1,
         imagenes.risas.ancho / 5,
         imagenes.risas.alto / 5
       );
     }
 
-    if (arboloco) {
+    if (estados.arboloco) {
       ctxExt.drawImage(
         imagenes.arboloco.img,
-        dims.ancho - 700,
-        (datos2[6] * dims.alto) / 255 - dims.alto / 1.1,
+        ancho - 700,
+        (datosFrec[6] * alto) / 255 - alto / 1.1,
         imagenes.arboloco.ancho / 6,
         imagenes.arboloco.alto / 6
       );
@@ -368,16 +293,15 @@ function inicio(analizador: AnalyserNode, imagenes: TImagenes, subtitulos: TSubt
     ctxBu.beginPath();
     ctxBu.moveTo(centro.x, centro.y);
     ctxBu.strokeStyle = 'white';
-    ctxMontaña.beginPath();
-    ctxMontaña.moveTo(centro.x + centro.x / 2, centro.y - centro.y / 1.1);
-    ctxMontaña.strokeStyle = 'white';
+    // ctxMontaña.beginPath();
+    // ctxMontaña.moveTo(centro.x + centro.x / 2, centro.y - centro.y / 1.1);
+    // ctxMontaña.strokeStyle = 'white';
     for (let i = 0; i < cantidadPuntos; i++) {
-      const punto = datos[i] / 128;
-      const puntoF = datos2[i] * 2;
+      const punto = datosTiempo[i] / 128;
+      const puntoF = datosFrec[i] * 2;
 
-      ctxExt.setTransform(1, 0, 0, 1, 0, 0);
       ctxExt.fillStyle = `rgba(${(Math.random() * 200) | 0}, ${(puntoF / 2) | 50}, ${(puntoF / 2) | 200} )`; //`rgb(${(Math.random() * 255) | 0}, ${(Math.random() * 255) | 0}, ${(Math.random() * 255) | 0})`;
-      ctxExt.fillRect(dims.ancho, i * pasoY, -1, pasoY);
+      ctxExt.fillRect(ancho, i * pasoY, -1, pasoY);
 
       const xBu = puntoF * Math.acos(pasoR * i) + centro.x;
       const yBu = puntoF * Math.sin(pasoR * i) + centro.y;
@@ -389,10 +313,10 @@ function inicio(analizador: AnalyserNode, imagenes: TImagenes, subtitulos: TSubt
       ctxMontaña.lineTo(xMontaña, yMontaña);*/
 
       ctx.lineTo(i * pasoX, punto * centro.y); // Línea del centro
-      ctxBarras.fillRect(i * pasoX, dims.alto - puntoF, 5, puntoF); // Pintar barras
+      ctxBarras.fillRect(i * pasoX, alto - puntoF, 5, puntoF); // Pintar barras
     }
     ctxBu.stroke();
-    ctxMontaña.stroke();
+    // ctxMontaña.stroke();
 
     ctxExt.drawImage(lienzoExt, -1, 0);
     ctx.drawImage(lienzoExt, 0, 0);
@@ -403,71 +327,65 @@ function inicio(analizador: AnalyserNode, imagenes: TImagenes, subtitulos: TSubt
     ctx.restore();
 
     ctx.drawImage(lienzoBu, 0, 0);
-    ctxBu.translate(dims.ancho, 0);
+    ctxBu.translate(ancho, 0);
     ctxBu.scale(-1, 1);
+    ctx.drawImage(lienzoBu, 0, 0, -ancho, alto);
 
-    ctx.save();
-    ctx.scale(0.4, 1);
-    ctx.translate(dims.ancho + dims.ancho / 3, 0);
-    ctx.drawImage(lienzoMontaña, 0, 0);
-    ctx.restore();
-
-    ctx.drawImage(lienzoBu, 0, 0, -dims.ancho, dims.alto);
+    // ctx.save();
+    // ctx.scale(0.4, 1);
+    // ctx.translate(dims.ancho + dims.ancho / 3, 0);
+    // ctx.drawImage(lienzoMontaña, 0, 0);
+    // ctx.restore();
 
     // Pintar onda central
     ctx.strokeStyle = '#85f5d6';
-    ctx.lineTo(dims.ancho, centro.y);
+    ctx.lineTo(ancho, centro.y);
     ctx.stroke();
 
-    if (tingua_bogotana) {
+    if (estados.tingua_bogotana) {
       ctxExt.font = '30px serif';
-      ctxExt.fillText('tingua bogotana', dims.ancho - 250, (datos2[93] * dims.alto) / 255);
+      ctxExt.fillText('tingua bogotana', ancho - 250, (datosFrec[93] * alto) / 255);
       ctxExt.strokeStyle = '#fed85d';
       ctxExt.beginPath();
-      ctxExt.arc(dims.ancho - 235, centro.y / 2, datos2[93] / 3, 0, 2 * Math.PI);
+      ctxExt.arc(ancho - 235, centro.y / 2, datosFrec[93] / 3, 0, 2 * Math.PI);
       ctx.save();
       ctx.globalCompositeOperation = 'multiply';
       ctxExt.stroke();
       ctx.restore();
     }
 
-    if (tingua_azul) {
+    if (estados.tingua_azul) {
       ctxExt.font = '30px serif';
-      ctxExt.fillText('tingua azul', dims.ancho - 250, (datos2[93] * dims.alto) / 255);
+      ctxExt.fillText('tingua azul', ancho - 250, (datosFrec[93] * alto) / 255);
       ctxExt.strokeStyle = '#2200ff';
       ctxExt.beginPath();
-      ctxExt.arc(dims.ancho - 250, centro.y / 2, datos2[93] / 3, 0, 2 * Math.PI);
+      ctxExt.arc(ancho - 250, centro.y / 2, datosFrec[93] / 3, 0, 2 * Math.PI);
       ctx.save();
       ctx.globalCompositeOperation = 'multiply';
       ctxExt.stroke();
       ctx.restore();
     }
 
-    if (mosca) {
-      ctxExt.font = `${datos[3]}px serif`;
-      ctxExt.fillText('mosca', dims.ancho - dims.ancho * 0.4, (datos[3] * dims.alto) / 255);
+    if (estados.mosca) {
+      ctxExt.font = `${datosTiempo[3]}px serif`;
+      ctxExt.fillText('mosca', ancho - ancho * 0.4, (datosTiempo[3] * alto) / 255);
       ctxExt.strokeStyle = '#fed85d';
       ctxExt.beginPath();
     }
 
-    if (abejorro) {
-      ctxExt.font = `${datos[3] * 1.5}px serif`;
-      ctxExt.fillText('abejorro', dims.ancho - dims.ancho * 0.4, (datos[3] * dims.alto) / 180);
+    if (estados.abejorro) {
+      ctxExt.font = `${datosTiempo[3] * 1.5}px serif`;
+      ctxExt.fillText('abejorro', ancho - ancho * 0.4, (datosTiempo[3] * alto) / 180);
       ctxExt.strokeStyle = '#fed85d';
       ctxExt.beginPath();
     }
 
-    if (abeja) {
-      ctxExt.font = `${datos[3] * 1.5}px serif`;
-      ctxExt.fillText('abeja', dims.ancho - dims.ancho * 0.4, (datos[3] * dims.alto) / 180);
+    if (estados.abeja) {
+      ctxExt.font = `${datosTiempo[3] * 1.5}px serif`;
+      ctxExt.fillText('abeja', ancho - ancho * 0.4, (datosTiempo[3] * alto) / 180);
       ctxExt.strokeStyle = '#fed85d';
       ctxExt.beginPath();
     }
-
-    /** Probar transformador */
-    // ctx.setTransform(...t.matriz);
-    // ctx.fillRect(0, 0, 50, 50);
-    // ctx.resetTransform();
   }
 }
 
@@ -477,30 +395,46 @@ function escalar() {
     lienzoExt.width =
     lienzoBarras.width =
     lienzoBu.width =
-    lienzoMontaña.width =
+      // lienzoMontaña.width =
       window.innerWidth;
   dims.alto =
     lienzo.height =
     lienzoExt.height =
     lienzoBarras.height =
     lienzoBu.height =
-    lienzoMontaña.height =
+      // lienzoMontaña.height =
       window.innerHeight;
   centro.x = dims.ancho / 2;
   centro.y = dims.alto / 2;
   ctx.fillStyle = 'pink';
 
   ctx.fillRect(0, 0, lienzo.width, lienzo.height);
-  pasoX = dims.ancho / (tamañoFFT / 2);
-  pasoY = dims.alto / (tamañoFFT / 2);
-
-  if (!audioCargado) {
-    ctx.save();
-    ctx.fillStyle = 'white';
-    ctx.font = 'bold 50px serif';
-    //ctx.fillText('▶', centro.x - 30, centro.y);
-    ctx.restore();
-  } else {
-    borrarTodo();
-  }
+  pasoX = dims.ancho / cantidadPuntos;
+  pasoY = dims.alto / cantidadPuntos;
 }
+
+/**
+ * Interfaz
+ */
+if (botonesAudios.length) {
+  botonesAudios.forEach((boton) => {
+    boton.addEventListener('click', () => {
+      const elegidoActualmente = document.querySelector('.elegido');
+      if (elegidoActualmente) elegidoActualmente.classList.remove('elegido');
+      boton.classList.add('elegido');
+
+      const { nombre } = boton.dataset;
+
+      if (nombre) {
+        botonPausa.innerText = '▐▐';
+        animacionCorriendo = true;
+        empezar(datosLugares[nombre]);
+        lugarElegido = nombre;
+      }
+    });
+  });
+}
+
+botonPausa.addEventListener('click', () => {
+  pausarReproducir();
+});
