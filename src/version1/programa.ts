@@ -1,4 +1,4 @@
-import './scss/estilos.scss';
+import '../scss/estilos.scss';
 
 import {
   applyWindow,
@@ -19,10 +19,10 @@ import {
 } from './ayudas';
 
 import { visualizerSettings } from './constantes';
-import { BarraEspectrograma } from './tipos';
+import { BarraEspectrograma } from '../tipos';
 import gui from './gui';
 import pintarGrilla from './pintarGrilla';
-import { Punto } from './tranformacion/Punto';
+import { Punto } from '../tranformacion/Punto';
 import Meyda, { MeydaFeaturesObject } from 'meyda';
 
 const contenedor = document.getElementById('contenedor') as HTMLDivElement;
