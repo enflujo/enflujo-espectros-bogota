@@ -134,7 +134,7 @@ export const suba: TLugar = {
       texto: 'Perchas perchas perchas perchas',
     },
     {
-      tiempoInicial: 156,
+      tiempoInicial: 156.5,
       tiempoFinal: 157,
       texto: 'Las narices de un perro',
     },

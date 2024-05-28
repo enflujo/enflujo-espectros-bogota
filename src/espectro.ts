@@ -64,12 +64,16 @@ const estados = {
   arboloco: false,
   avion: false,
   biciMotor: false,
+  carro: false,
   copeton: false,
   curi: false,
   gallina: false,
   gallo: false,
+  gavilanMaromero: false,
   mirla: false,
   mosca: false,
+  moto: false,
+  narizPerro: false,
   pasos: false,
   perchas: false,
   risas: false,
@@ -265,6 +269,34 @@ function inicio(analizador: AnalyserNode, imagenes: TImagenes, subtitulos: TSubt
       );
     }
 
+    if (estados.carro) {
+      ctxExt.drawImage(imagenes.carro.img, ancho * 0.6, alto * 0.4, imagenes.carro.ancho / 8, imagenes.carro.alto / 8);
+    }
+
+    if (estados.gallina) {
+      ctxExt.drawImage(
+        imagenes.gallina.img,
+        ancho * 0.5,
+        alto * 0.4,
+        imagenes.gallina.ancho / 10,
+        imagenes.gallina.alto / 10
+      );
+    }
+
+    if (estados.gallo) {
+      ctxExt.drawImage(imagenes.gallo.img, ancho * 0.6, alto * 0.4, imagenes.gallo.ancho / 9, imagenes.gallo.alto / 9);
+    }
+
+    if (estados.gavilanMaromero) {
+      ctxExt.drawImage(
+        imagenes.gavilanMaromero.img,
+        ancho - ancho * 0.4,
+        (datosFrec[5] * alto) / 255 - alto * 0.4,
+        imagenes.gavilanMaromero.ancho / 8,
+        imagenes.gavilanMaromero.alto / 8
+      );
+    }
+
     if (estados.mirla) {
       ctxExt.drawImage(
         imagenes.mirla.img,
@@ -272,6 +304,16 @@ function inicio(analizador: AnalyserNode, imagenes: TImagenes, subtitulos: TSubt
         (datosFrec[98] * alto) / 255,
         imagenes.mirla.ancho / 14,
         imagenes.mirla.alto / 14
+      );
+    }
+
+    if (estados.moto) {
+      ctxExt.drawImage(
+        imagenes.moto.img,
+        ancho * 0.6,
+        (datosFrec[2] * alto) / 255,
+        imagenes.moto.ancho / 9,
+        imagenes.moto.alto / 9
       );
     }
 
@@ -292,6 +334,16 @@ function inicio(analizador: AnalyserNode, imagenes: TImagenes, subtitulos: TSubt
         alto / 255 - 100,
         imagenes.perchas.ancho / 5,
         imagenes.perchas.alto / 5
+      );
+    }
+
+    if (estados.narizPerro) {
+      ctxExt.drawImage(
+        imagenes.narizPerro.img,
+        ancho - ancho * 0.4,
+        alto / 255 + 100,
+        imagenes.narizPerro.ancho / 5,
+        imagenes.narizPerro.alto / 5
       );
     }
 
@@ -330,8 +382,8 @@ function inicio(analizador: AnalyserNode, imagenes: TImagenes, subtitulos: TSubt
         imagenes.avionDer.img,
         ancho - 700,
         (datosFrec[1] * alto) / 255 - alto * 0.7,
-        imagenes.avion_der.ancho / 10,
-        imagenes.avion_der.alto / 10
+        imagenes.avionDer.ancho / 10,
+        imagenes.avionDer.alto / 10
       );
     }
 
@@ -339,7 +391,7 @@ function inicio(analizador: AnalyserNode, imagenes: TImagenes, subtitulos: TSubt
       ctxExt.drawImage(
         imagenes.biciMotor.img,
         ancho - ancho / 2,
-        (datosFrec[1] * alto) / 255 - alto * 0.2,
+        (datosFrec[1] * alto) / 255 - alto * 0.1,
         imagenes.biciMotor.ancho / 10,
         imagenes.biciMotor.alto / 10
       );
