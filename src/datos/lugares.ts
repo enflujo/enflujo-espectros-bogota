@@ -19,7 +19,27 @@ export const zuque: TLugar = {
 
 export const suba: TLugar = {
   rutaAudio: 's1_suba_RvdH.mp3',
-  imagenes: ['copeton', 'abuela', 'mirla', 'pasos', 'risas', 'arboloco'],
+  imagenes: [
+    'abeja',
+    'abuela',
+    'avion_der',
+    'arboloco',
+    'biciMotor',
+    'carro',
+    'copeton',
+    'curi',
+    'gallina',
+    'gallo',
+    'gavilan_maromero',
+    'mosca',
+    'moto',
+    'mirla',
+    'nariz_perro',
+    'pasos',
+    'perchas',
+    'pito',
+    'risas',
+  ],
   subtitulos: [
     {
       tiempoInicial: 1,

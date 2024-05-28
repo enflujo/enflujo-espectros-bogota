@@ -6,10 +6,21 @@ export default (
 ) => {
   estados.abuela =
     segundos > 10.5 &&
-    segundos <= 12 &&
+    segundos < 12.1 &&
     espectroAmplitud[16] > 2 &&
-    espectroAmplitud[14] >= 5 &&
+    espectroAmplitud[14] > 4.9 &&
     espectroAmplitud[9] > 3; //espectroAmplitud[16] > 7 && espectroAmplitud[47] > 5 && zcr < 100 && zcr > 84;
+
+  estados.avion = espectroAmplitud[1] > 5 && segundos > 80.9 && segundos < 88;
+
+  estados.biciMotor =
+    (segundos > 57 && segundos < 57.05) ||
+    (segundos > 57.5 && segundos < 57.55) ||
+    (segundos > 58 && segundos < 58.05) ||
+    (segundos > 58.5 && segundos < 58.55) ||
+    (segundos > 59 && segundos < 59.05) ||
+    (segundos > 60 && segundos < 60.05) ||
+    (segundos > 61 && segundos < 61.05);
 
   // cambiar booleanos a verdadero para mostrar elementos si se cumplen condiciones de tiempo y frecuencia
   estados.copeton =
@@ -19,6 +30,8 @@ export default (
     espectroAmplitud[78] <= 2 &&
     espectroAmplitud[27] < 3 &&
     zcr > 150;
+
+  estados.curi = segundos > 90.2 && segundos < 90.23;
 
   estados.tingua_bogotana =
     segundos >= 87 &&
@@ -32,7 +45,8 @@ export default (
     (segundos >= 78.1 && segundos <= 78.2) ||
     (segundos >= 80 && segundos <= 88 && espectroAmplitud[57] >= 0.1 && espectroAmplitud[58] >= 0.5 && zcr < 170);
 
-  estados.mosca = (segundos >= 119.5 && segundos < 120) || (segundos === 163 && espectroAmplitud[2] > 3);
+  estados.mosca =
+    (segundos % 2 === 0 && segundos >= 119.5 && segundos < 120) || (segundos === 163 && espectroAmplitud[2] > 3);
 
   estados.abejorro = segundos >= 161 && segundos < 162;
 

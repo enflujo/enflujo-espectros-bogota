@@ -28,7 +28,9 @@ const ctxBu = lienzoBu.getContext('2d');
 /**
  * Configuración general
  */
+// Variable para no empezar el audio en 0
 let empezarEn = 0;
+let tiempoInicial = 0;
 const base = import.meta.env.BASE_URL;
 const tamañoFFT = 2048;
 const cantidadPuntos = tamañoFFT / 2;
@@ -55,17 +57,22 @@ let lugarElegido = 'suba';
 let animacionCorriendo = false;
 // booleanos para mostrar elementos
 const estados = {
-  copeton: false,
-  tingua_bogotana: false,
-  tingua_azul: false,
+  abeja: false,
+  abejorro: false,
   abuela: false,
+  arboloco: false,
+  avion: false,
+  biciMotor: false,
+  copeton: false,
+  curi: false,
+  gallina: false,
+  gallo: false,
   mirla: false,
   mosca: false,
-  abejorro: false,
-  abeja: false,
   pasos: false,
   risas: false,
-  arboloco: false,
+  tinguaBogotana: false,
+  tinguaAzul: false,
 };
 
 /**
@@ -77,7 +84,7 @@ window.onresize = escalar;
 
 function mostrarTiempo() {
   if (!etiquetaTiempo) return;
-  segundos = audioCtx.currentTime - empezarEn;
+  segundos = audioCtx.currentTime - tiempoInicial + empezarEn;
 
   const h = reducirDecimales(segundos / 3600);
   const m = reducirDecimales((segundos % 3600) / 60);
@@ -164,8 +171,8 @@ async function empezar(lugar: TLugar) {
   fuente.buffer = audio;
   fuente.connect(analizador);
   fuente.connect(audioCtx.destination);
-  fuente.start(0);
-  empezarEn = audioCtx.currentTime;
+  fuente.start(0, empezarEn);
+  tiempoInicial = audioCtx.currentTime;
 
   try {
     const imagenes: TImagenes = {};
@@ -286,6 +293,36 @@ function inicio(analizador: AnalyserNode, imagenes: TImagenes, subtitulos: TSubt
       );
     }
 
+    if (estados.curi) {
+      ctxExt.drawImage(
+        imagenes.curi.img,
+        ancho - 700,
+        (datosFrec[6] * alto) / 255 - alto * 0.2,
+        imagenes.curi.ancho / 10,
+        imagenes.curi.alto / 10
+      );
+    }
+
+    if (estados.avion) {
+      ctxExt.drawImage(
+        imagenes.avion_der.img,
+        ancho - 700,
+        (datosFrec[1] * alto) / 255 - alto * 0.7,
+        imagenes.avion_der.ancho / 10,
+        imagenes.avion_der.alto / 10
+      );
+    }
+
+    if (estados.biciMotor) {
+      ctxExt.drawImage(
+        imagenes.biciMotor.img,
+        ancho - 700,
+        (datosFrec[1] * alto) / 255 - alto * 0.4,
+        imagenes.biciMotor.ancho / 10,
+        imagenes.biciMotor.alto / 10
+      );
+    }
+
     ctx.fillStyle = 'blue';
     ctx.beginPath();
     ctx.moveTo(0, centro.y);
@@ -342,7 +379,7 @@ function inicio(analizador: AnalyserNode, imagenes: TImagenes, subtitulos: TSubt
     ctx.lineTo(ancho, centro.y);
     ctx.stroke();
 
-    if (estados.tingua_bogotana) {
+    if (estados.tinguaBogotana) {
       ctxExt.font = '30px serif';
       ctxExt.fillText('tingua bogotana', ancho - 250, (datosFrec[93] * alto) / 255);
       ctxExt.strokeStyle = '#fed85d';
@@ -354,7 +391,7 @@ function inicio(analizador: AnalyserNode, imagenes: TImagenes, subtitulos: TSubt
       ctx.restore();
     }
 
-    if (estados.tingua_azul) {
+    if (estados.tinguaAzul) {
       ctxExt.font = '30px serif';
       ctxExt.fillText('tingua azul', ancho - 250, (datosFrec[93] * alto) / 255);
       ctxExt.strokeStyle = '#2200ff';
@@ -371,6 +408,13 @@ function inicio(analizador: AnalyserNode, imagenes: TImagenes, subtitulos: TSubt
       ctxExt.fillText('mosca', ancho - ancho * 0.4, (datosTiempo[3] * alto) / 255);
       ctxExt.strokeStyle = '#fed85d';
       ctxExt.beginPath();
+      ctxExt.drawImage(
+        imagenes.mosca.img,
+        ancho - ancho / 2,
+        (datosTiempo[3] * alto) / 255 - alto * 0.5,
+        imagenes.mosca.ancho / 10,
+        imagenes.mosca.alto / 10
+      );
     }
 
     if (estados.abejorro) {
@@ -378,6 +422,13 @@ function inicio(analizador: AnalyserNode, imagenes: TImagenes, subtitulos: TSubt
       ctxExt.fillText('abejorro', ancho - ancho * 0.4, (datosTiempo[3] * alto) / 180);
       ctxExt.strokeStyle = '#fed85d';
       ctxExt.beginPath();
+      ctxExt.drawImage(
+        imagenes.abejorro.img,
+        ancho - ancho / 2,
+        (datosTiempo[3] * alto) / 255 - alto * 0.5,
+        imagenes.abejorro.ancho / 10,
+        imagenes.abejorro.alto / 10
+      );
     }
 
     if (estados.abeja) {
@@ -385,6 +436,13 @@ function inicio(analizador: AnalyserNode, imagenes: TImagenes, subtitulos: TSubt
       ctxExt.fillText('abeja', ancho - ancho * 0.4, (datosTiempo[3] * alto) / 180);
       ctxExt.strokeStyle = '#fed85d';
       ctxExt.beginPath();
+      ctxExt.drawImage(
+        imagenes.abeja.img,
+        ancho - ancho / 2,
+        (datosFrec[3] * alto) / 255 - alto * 0.2,
+        imagenes.abeja.ancho / 8,
+        imagenes.abeja.alto / 8
+      );
     }
   }
 }
