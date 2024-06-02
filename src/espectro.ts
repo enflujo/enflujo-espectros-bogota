@@ -14,6 +14,8 @@ const botonesAudios = document.querySelectorAll<HTMLLIElement>('.botonAudio');
 const etiquetaTiempo: HTMLParagraphElement = document.getElementById('tiempo') as HTMLParagraphElement;
 const botonPausa: HTMLDivElement = document.getElementById('pausa') as HTMLDivElement;
 const contenedorSubtitulos: HTMLParagraphElement = document.getElementById('subtitulos') as HTMLParagraphElement;
+const botonCreditos = document.getElementById('saberMas');
+const creditos = document.getElementById('creditos');
 const lienzo: HTMLCanvasElement = document.getElementById('lienzo') as HTMLCanvasElement;
 const ctx = lienzo.getContext('2d') as CanvasRenderingContext2D;
 const lienzoExt: OffscreenCanvas = new OffscreenCanvas(0, 0);
@@ -569,4 +571,8 @@ if (botonesAudios.length) {
 
 botonPausa.addEventListener('click', () => {
   pausarReproducir();
+});
+
+botonCreditos?.addEventListener('click', () => {
+  creditos?.classList.toggle('visible');
 });
