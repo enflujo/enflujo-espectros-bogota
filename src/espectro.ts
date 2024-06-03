@@ -6,6 +6,7 @@ import * as datosLugares from './datos/lugares';
 import { cargarImgs, reducirDecimales } from './ayudas';
 import type { TImagenes, TLugar, TSubtitulo } from './tipos';
 import estadosSuba from './estadosSuba';
+import estadosBosa from './estadosBosa';
 
 /**
  * Elementos de HTML
@@ -14,6 +15,9 @@ const botonesAudios = document.querySelectorAll<HTMLLIElement>('.botonAudio');
 const etiquetaTiempo: HTMLParagraphElement = document.getElementById('tiempo') as HTMLParagraphElement;
 const botonPausa: HTMLDivElement = document.getElementById('pausa') as HTMLDivElement;
 const contenedorSubtitulos: HTMLParagraphElement = document.getElementById('subtitulos') as HTMLParagraphElement;
+const botonCreditos = document.getElementById('saberMas');
+const botonCerrarCreditos = document.getElementById('cerrar');
+const creditos = document.getElementById('creditos');
 const lienzo: HTMLCanvasElement = document.getElementById('lienzo') as HTMLCanvasElement;
 const ctx = lienzo.getContext('2d') as CanvasRenderingContext2D;
 const lienzoExt: OffscreenCanvas = new OffscreenCanvas(0, 0);
@@ -76,6 +80,7 @@ const estados = {
   narizPerro: false,
   pasos: false,
   perchas: false,
+  pito: false,
   risas: false,
   tinguaBogotana: false,
   tinguaAzul: false,
@@ -146,6 +151,8 @@ function revisarEstados(caracteristicas: MeydaFeaturesObject) {
 
   if (lugarElegido === 'suba') {
     estadosSuba(estados, segundos, amplitudeSpectrum, zcr);
+  } else if (lugarElegido === 'bosa') {
+    estadosBosa(estados, segundos, amplitudeSpectrum, zcr);
   }
 }
 
@@ -391,7 +398,7 @@ function inicio(analizador: AnalyserNode, imagenes: TImagenes, subtitulos: TSubt
       ctxExt.drawImage(
         imagenes.biciMotor.img,
         ancho - ancho / 2,
-        (datosFrec[1] * alto) / 255 - alto * 0.1,
+        (datosFrec[1] * alto) / 255 - alto * 0.3,
         imagenes.biciMotor.ancho / 10,
         imagenes.biciMotor.alto / 10
       );
@@ -569,4 +576,12 @@ if (botonesAudios.length) {
 
 botonPausa.addEventListener('click', () => {
   pausarReproducir();
+});
+
+botonCreditos?.addEventListener('click', () => {
+  creditos?.classList.toggle('visible');
+});
+
+botonCerrarCreditos?.addEventListener('click', () => {
+  creditos?.classList.remove('visible');
 });
