@@ -1,8 +1,59 @@
 import type { TLugar } from '../tipos';
 export const bosa: TLugar = {
   rutaAudio: 's2_bosa.mp3',
-  imagenes: [],
-  subtitulos: [],
+  imagenes: ['abeja', 'avionDer', 'biciMotor', 'copeton', 'mosca', 'narizPerro', 'pasos', 'pito', 'risas'],
+  subtitulos: [
+    {
+      tiempoInicial: 3.2,
+      tiempoFinal: 4.7,
+      texto: 'Una tapa, una olla',
+    },
+    {
+      tiempoInicial: 5.2,
+      tiempoFinal: 7,
+      texto: '"¿Qué están escuchando?"',
+    },
+    {
+      tiempoInicial: 14.4,
+      tiempoFinal: 15.6,
+      texto: 'Un árbitro de fútbol',
+    },
+    {
+      tiempoInicial: 25.6,
+      tiempoFinal: 30,
+      texto: 'Un sinsonte (Mimus gilvus)',
+    },
+    {
+      tiempoInicial: 46,
+      tiempoFinal: 53,
+      texto: 'Una volqueta lejana',
+    },
+    {
+      tiempoInicial: 58.5,
+      tiempoFinal: 61,
+      texto: 'Una volqueta más cerca',
+    },
+    {
+      tiempoInicial: 68,
+      tiempoFinal: 70,
+      texto: 'Hojas de palma movidas por el viento',
+    },
+    {
+      tiempoInicial: 85,
+      tiempoFinal: 87,
+      texto: 'Alcaravanes',
+    },
+    {
+      tiempoInicial: 95,
+      tiempoFinal: 104,
+      texto: 'Caída de agua en planta de tratamiento',
+    },
+    {
+      tiempoInicial: 105,
+      tiempoFinal: 118,
+      texto: 'Motor de planta de tratamiento',
+    },
+  ],
 };
 
 export const cerroSeco: TLugar = {
