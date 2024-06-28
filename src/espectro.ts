@@ -33,7 +33,7 @@ const ctxBu = lienzoBu.getContext('2d');
  * Configuración general
  */
 // Variable para no empezar el audio en 0
-let empezarEn = 60;
+let empezarEn = 0;
 let tiempoInicial = 0;
 const base = import.meta.env.BASE_URL;
 const tamañoFFT = 2048;
