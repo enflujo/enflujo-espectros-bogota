@@ -7,6 +7,7 @@ import { cargarImgs, reducirDecimales } from './ayudas';
 import type { TImagenes, TLugar, TSubtitulo } from './tipos';
 import estadosSuba from './estadosSuba';
 import estadosBosa from './estadosBosa';
+import estadosZuque from './estadosZuque';
 
 /**
  * Elementos de HTML
@@ -156,6 +157,8 @@ function revisarEstados(caracteristicas: MeydaFeaturesObject) {
     estadosSuba(estados, segundos, amplitudeSpectrum, zcr);
   } else if (lugarElegido === 'bosa') {
     estadosBosa(estados, segundos, amplitudeSpectrum, zcr);
+  } else if (lugarElegido === 'zuque') {
+    estadosZuque(estados, segundos, amplitudeSpectrum, zcr);
   }
 }
 
@@ -361,9 +364,9 @@ function inicio(analizador: AnalyserNode, imagenes: TImagenes, subtitulos: TSubt
       ctxExt.drawImage(
         imagenes.narizPerro.img,
         ancho - ancho * 0.4,
-        alto / 255 + 100,
-        imagenes.narizPerro.ancho / 5,
-        imagenes.narizPerro.alto / 5
+        alto / 255 + datosFrec[6],
+        imagenes.narizPerro.ancho / 6,
+        imagenes.narizPerro.alto / 7
       );
     }
 
