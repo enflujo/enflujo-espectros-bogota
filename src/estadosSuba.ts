@@ -40,13 +40,14 @@ export default (
     (segundos > 72.8 && segundos < 72.9) ||
     (segundos > 73.2 && segundos < 73.4) ||
     (segundos > 73.6 && segundos < 73.8) ||
-    (segundos > 105 && segundos < 105.2) ||
+    (segundos > 105.5 && segundos < 105.8) ||
+    (segundos > 113.5 && segundos < 113.8) ||
     (segundos > 166.5 && segundos < 166.7);
 
   estados.narizPerro = segundos > 156.5 && segundos < 156.55;
 
   estados.tinguaBogotana =
-    segundos >= 87 &&
+    segundos >= 98 &&
     segundos <= 99 &&
     espectroAmplitud[2] > 5 &&
     espectroAmplitud[78] < 3 &&
@@ -54,11 +55,11 @@ export default (
     zcr < 170;
 
   estados.tinguaAzul =
-    (segundos >= 78.1 && segundos <= 78.2) ||
-    (segundos >= 80 && segundos <= 88 && espectroAmplitud[57] >= 0.1 && espectroAmplitud[58] >= 0.5 && zcr < 170);
+    segundos >= 88 && segundos <= 94 && espectroAmplitud[57] >= 0.1 && espectroAmplitud[58] >= 0.5 && zcr < 170;
 
-  estados.mosca =
-    (segundos % 2 === 0 && segundos >= 119.5 && segundos < 120) || (segundos === 163 && espectroAmplitud[2] > 3);
+  estados.tingua = segundos >= 108 && segundos <= 113 && espectroAmplitud[58] >= 0.5 && zcr < 170;
+
+  estados.mosca = (segundos >= 119.5 && segundos < 120) || (segundos === 163 && espectroAmplitud[2] > 3);
 
   estados.abejorro = segundos >= 161 && segundos < 162;
 
@@ -72,10 +73,10 @@ export default (
   estados.moto = (segundos > 46 && segundos < 46.1) || (segundos > 48.4 && segundos < 48.5);
 
   estados.pasos =
-    segundos === 124 ||
+    segundos === 123 ||
     (segundos > 124 &&
       segundos < 137 &&
-      espectroAmplitud[1] > 20 &&
+      espectroAmplitud[1] > 18 &&
       espectroAmplitud[2] > 30 &&
       espectroAmplitud[3] > 30);
 

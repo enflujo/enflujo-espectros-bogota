@@ -27,13 +27,21 @@ export default (
     (segundos > 15.5 && segundos < 15.55) ||
     (segundos > 16 && segundos < 16.03) ||
     (segundos > 16.5 && segundos < 16.55) ||
-    (segundos > 17 && segundos < 17.05);
+    (segundos > 17 && segundos < 17.05) ||
+    (segundos > 130 && segundos < 130.05) ||
+    (segundos > 130.9 && segundos < 131.04);
 
+  estados.alcaravan =
+    (segundos > 75 && segundos < 85 && espectroAmplitud[58] >= 1.5) ||
+    (segundos > 85 && segundos < 89 && espectroAmplitud[58] >= 3);
   estados.avion = espectroAmplitud[1] > 6 && segundos > 38 && segundos < 39;
   estados.copeton =
-    ((segundos > 39.5 && segundos < 41.4) || (segundos > 89 && segundos < 91) || (segundos > 93 && segundos < 95)) &&
-    /* espectroAmplitud[92] >= 3 &&
-    espectroAmplitud[78] <= 2 &&
+    ((segundos > 39.5 && segundos < 41.4) ||
+      (segundos > 89 && segundos < 91) ||
+      (segundos > 93 && segundos < 95) ||
+      (segundos > 165 && segundos < 166.8)) &&
+    espectroAmplitud[92] >= 2 &&
+    /*espectroAmplitud[78] <= 2 &&
     espectroAmplitud[27] < 3 && */
     zcr > 150;
 
@@ -43,10 +51,12 @@ export default (
   estados.mosca = (segundos > 32 && segundos < 33) || (segundos > 35.5 && segundos < 37);
 
   estados.pasos =
-    ((segundos > 79.5 && segundos < 85) || (segundos > 110 && segundos < 116)) &&
-    espectroAmplitud[1] > 20 &&
-    espectroAmplitud[2] > 30 &&
-    espectroAmplitud[3] > 30;
+    ((segundos > 79.5 && segundos < 85) ||
+      (segundos > 110 && segundos < 116) ||
+      (segundos > 115.8 && segundos < 119)) &&
+    espectroAmplitud[1] > 10 &&
+    espectroAmplitud[2] > 20 &&
+    espectroAmplitud[3] > 20;
 
-  estados.narizPerro = segundos > 123.3 && segundos < 123.5;
+  estados.narizPerro = (segundos > 125 && segundos < 125.1) || (segundos > 117 && segundos < 117.1);
 };

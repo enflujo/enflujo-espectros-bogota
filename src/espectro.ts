@@ -33,7 +33,7 @@ const ctxBu = lienzoBu.getContext('2d');
  * Configuración general
  */
 // Variable para no empezar el audio en 0
-let empezarEn = 0;
+let empezarEn = 60;
 let tiempoInicial = 0;
 const base = import.meta.env.BASE_URL;
 const tamañoFFT = 2048;
@@ -65,6 +65,7 @@ const estados = {
   abeja: false,
   abejorro: false,
   abuela: false,
+  alcaravan: false,
   arboloco: false,
   avion: false,
   biciMotor: false,
@@ -84,6 +85,7 @@ const estados = {
   risas: false,
   tinguaBogotana: false,
   tinguaAzul: false,
+  tingua: false,
 };
 
 /**
@@ -273,6 +275,16 @@ function inicio(analizador: AnalyserNode, imagenes: TImagenes, subtitulos: TSubt
         (datosFrec[3] * alto) / 255,
         imagenes.aguaFuego.ancho / 10,
         imagenes.aguaFuego.alto / 10
+      );
+    }
+
+    if (estados.alcaravan) {
+      ctxExt.drawImage(
+        imagenes.alcaravan.img,
+        ancho - ancho * 0.4,
+        (datosFrec[58] * alto) / 255 - alto * 0.4,
+        imagenes.alcaravan.ancho / 8,
+        imagenes.alcaravan.alto / 8
       );
     }
 
@@ -475,6 +487,18 @@ function inicio(analizador: AnalyserNode, imagenes: TImagenes, subtitulos: TSubt
     if (estados.tinguaAzul) {
       ctxExt.font = '30px serif';
       ctxExt.fillText('tingua azul', ancho - 250, (datosFrec[93] * alto) / 255);
+      ctxExt.strokeStyle = '#2200ff';
+      ctxExt.beginPath();
+      ctxExt.arc(ancho - 250, centro.y / 2, datosFrec[93] / 3, 0, 2 * Math.PI);
+      ctx.save();
+      ctx.globalCompositeOperation = 'multiply';
+      ctxExt.stroke();
+      ctx.restore();
+    }
+
+    if (estados.tingua) {
+      ctxExt.font = '30px serif';
+      ctxExt.fillText('tingua', ancho - 250, (datosFrec[93] * alto) / 255);
       ctxExt.strokeStyle = '#2200ff';
       ctxExt.beginPath();
       ctxExt.arc(ancho - 250, centro.y / 2, datosFrec[93] / 3, 0, 2 * Math.PI);

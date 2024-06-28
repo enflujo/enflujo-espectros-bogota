@@ -1,7 +1,7 @@
 import type { TLugar } from '../tipos';
 export const bosa: TLugar = {
   rutaAudio: 's2_bosa.mp3',
-  imagenes: ['abeja', 'avionDer', 'biciMotor', 'copeton', 'mosca', 'narizPerro', 'pasos', 'pito', 'risas'],
+  imagenes: ['abeja', 'alcaravan', 'avionDer', 'biciMotor', 'copeton', 'mosca', 'narizPerro', 'pasos', 'pito', 'risas'],
   subtitulos: [
     {
       tiempoInicial: 3.2,
@@ -39,8 +39,8 @@ export const bosa: TLugar = {
       texto: 'Hojas de palma movidas por el viento',
     },
     {
-      tiempoInicial: 85,
-      tiempoFinal: 87,
+      tiempoInicial: 75,
+      tiempoFinal: 89,
       texto: 'Alcaravanes',
     },
     {
@@ -52,6 +52,52 @@ export const bosa: TLugar = {
       tiempoInicial: 105,
       tiempoFinal: 118,
       texto: 'Motor de planta de tratamiento',
+    },
+    {
+      tiempoInicial: 128,
+      tiempoFinal: 131,
+      texto: 'Un camioncito destartalado da reversa',
+    },
+    {
+      tiempoInicial: 131.5,
+      tiempoFinal: 132.5,
+      texto: 'Puerta de metal',
+    },
+
+    {
+      tiempoInicial: 134,
+      tiempoFinal: 138,
+      texto: 'Ping pong',
+    },
+    {
+      tiempoInicial: 138.6,
+      tiempoFinal: 144,
+      texto: 'Tablas de skate',
+    },
+    {
+      tiempoInicial: 145,
+      tiempoFinal: 147,
+      texto: 'Grita un niño',
+    },
+    {
+      tiempoInicial: 151.5,
+      tiempoFinal: 152.5,
+      texto: 'Puerta de metal',
+    },
+    {
+      tiempoInicial: 153,
+      tiempoFinal: 154,
+      texto: 'Tráfico vehicular',
+    },
+    {
+      tiempoInicial: 155,
+      tiempoFinal: 157,
+      texto: 'Una carretilla de metal',
+    },
+    {
+      tiempoInicial: 157,
+      tiempoFinal: 164,
+      texto: 'Mangostinos y pitayas',
     },
   ],
 };
@@ -165,7 +211,12 @@ export const suba: TLugar = {
       texto: 'Curí',
     },
     {
-      tiempoInicial: 105,
+      tiempoInicial: 105.5,
+      tiempoFinal: 108,
+      texto: 'Gavilán maromero',
+    },
+    {
+      tiempoInicial: 113.5,
       tiempoFinal: 115,
       texto: 'Gavilán maromero',
     },
