@@ -82,6 +82,7 @@ const estados = {
   pasos: false,
   perchas: false,
   pito: false,
+  pingPong: false,
   risas: false,
   tinguaBogotana: false,
   tinguaAzul: false,
@@ -548,6 +549,20 @@ function inicio(analizador: AnalyserNode, imagenes: TImagenes, subtitulos: TSubt
         imagenes.abeja.ancho / 8,
         imagenes.abeja.alto / 8
       );
+    }
+
+    if (estados.pingPong) {
+      for (let i = 30; i > 0; i = i - 30) {
+        ctxExt.font = '25px serif';
+        ctxExt.fillText('ping pong', ancho - 250, (datosFrec[9] * alto) / 255);
+        ctxExt.strokeStyle = '#ffeeee';
+        ctxExt.beginPath();
+        ctxExt.arc(ancho - 235, centro.y + datosFrec[9], i, 0, 2 * Math.PI);
+        ctx.save();
+        ctx.globalCompositeOperation = 'multiply';
+        ctxExt.stroke();
+        ctx.restore();
+      }
     }
   }
 }

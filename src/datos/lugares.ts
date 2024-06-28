@@ -1,7 +1,19 @@
 import type { TLugar } from '../tipos';
 export const bosa: TLugar = {
   rutaAudio: 's2_bosa.mp3',
-  imagenes: ['abeja', 'alcaravan', 'avionDer', 'biciMotor', 'copeton', 'mosca', 'narizPerro', 'pasos', 'pito', 'risas'],
+  imagenes: [
+    'abeja',
+    'alcaravan',
+    'avionDer',
+    'biciMotor',
+    'carro',
+    'copeton',
+    'mosca',
+    'narizPerro',
+    'pasos',
+    'pito',
+    'risas',
+  ],
   subtitulos: [
     {
       tiempoInicial: 3.2,
@@ -86,7 +98,7 @@ export const bosa: TLugar = {
     },
     {
       tiempoInicial: 153,
-      tiempoFinal: 154,
+      tiempoFinal: 155,
       texto: 'Tráfico vehicular',
     },
     {
@@ -97,7 +109,7 @@ export const bosa: TLugar = {
     {
       tiempoInicial: 157,
       tiempoFinal: 164,
-      texto: 'Mangostinos y pitayas',
+      texto: '"Mangostino barato"',
     },
   ],
 };
