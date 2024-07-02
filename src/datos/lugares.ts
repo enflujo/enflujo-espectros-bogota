@@ -366,6 +366,27 @@ export const zuque: TLugar = {
 
 export const cerroSeco: TLugar = {
   rutaAudio: 's4_cerroSeco.mp3',
-  imagenes: [],
-  subtitulos: [],
+  imagenes: ['copeton', 'gallina', 'gallo'],
+  subtitulos: [
+    {
+      tiempoInicial: 0.8,
+      tiempoFinal: 2,
+      texto: '"Bienvenidas, bienvenidos"',
+    },
+    {
+      tiempoInicial: 2.6,
+      tiempoFinal: 5.2,
+      texto: '"Uuuuuuu"',
+    },
+    {
+      tiempoInicial: 5.6,
+      tiempoFinal: 6.8,
+      texto: 'La tapa de la olla',
+    },
+    {
+      tiempoInicial: 8.6,
+      tiempoFinal: 9.6,
+      texto: 'La tapa de la olla',
+    },
+  ],
 };

@@ -8,6 +8,7 @@ import type { TImagenes, TLugar, TSubtitulo } from './tipos';
 import estadosSuba from './estadosSuba';
 import estadosBosa from './estadosBosa';
 import estadosZuque from './estadosZuque';
+import estadosCerroSeco from './estadosCerroSeco';
 
 /**
  * Elementos de HTML
@@ -159,6 +160,8 @@ function revisarEstados(caracteristicas: MeydaFeaturesObject) {
     estadosBosa(estados, segundos, amplitudeSpectrum, zcr);
   } else if (lugarElegido === 'zuque') {
     estadosZuque(estados, segundos, amplitudeSpectrum, zcr);
+  } else if (lugarElegido === 'cerroSeco') {
+    estadosCerroSeco(estados, segundos, amplitudeSpectrum, zcr);
   }
 }
 
@@ -297,11 +300,12 @@ function inicio(analizador: AnalyserNode, imagenes: TImagenes, subtitulos: TSubt
     }
 
     if (estados.gallina) {
+      console.log(datosFrec[8] / 100);
       ctxExt.drawImage(
         imagenes.gallina.img,
         ancho * 0.5,
-        alto * 0.4,
-        imagenes.gallina.ancho / 10,
+        alto / (datosFrec[8] / 100),
+        imagenes.gallina.ancho / 10 + datosFrec[8],
         imagenes.gallina.alto / 10
       );
     }
