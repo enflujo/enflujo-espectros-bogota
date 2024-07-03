@@ -60,8 +60,6 @@ export default (
       (segundos > 93 && segundos < 95) ||
       (segundos > 165 && segundos < 166.8)) &&
     espectroAmplitud[92] >= 2 &&
-    /*espectroAmplitud[78] <= 2 &&
-    espectroAmplitud[27] < 3 && */
     zcr > 150;
 
   estados.pito = segundos > 14.5 && segundos < 15;

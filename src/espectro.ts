@@ -300,18 +300,17 @@ function inicio(analizador: AnalyserNode, imagenes: TImagenes, subtitulos: TSubt
     }
 
     if (estados.gallina) {
-      console.log(datosFrec[8] / 100);
       ctxExt.drawImage(
         imagenes.gallina.img,
         ancho * 0.5,
-        alto / (datosFrec[8] / 100),
+        datosFrec[27],
         imagenes.gallina.ancho / 10 + datosFrec[8],
         imagenes.gallina.alto / 10
       );
     }
 
     if (estados.gallo) {
-      ctxExt.drawImage(imagenes.gallo.img, ancho * 0.6, alto * 0.4, imagenes.gallo.ancho / 9, imagenes.gallo.alto / 9);
+      ctxExt.drawImage(imagenes.gallo.img, ancho * 0.6, alto * 0.3, imagenes.gallo.ancho / 9, imagenes.gallo.alto / 9);
     }
 
     if (estados.gavilanMaromero) {

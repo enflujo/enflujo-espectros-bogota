@@ -366,15 +366,15 @@ export const zuque: TLugar = {
 
 export const cerroSeco: TLugar = {
   rutaAudio: 's4_cerroSeco.mp3',
-  imagenes: ['copeton', 'gallina', 'gallo'],
+  imagenes: ['alcaravan', 'abeja', 'copeton', 'gallina', 'gallo', 'narizPerro', 'pasos'],
   subtitulos: [
     {
       tiempoInicial: 0.8,
-      tiempoFinal: 2,
-      texto: '"Bienvenidas, bienvenidos"',
+      tiempoFinal: 2.5,
+      texto: '"Pues bienvenidas, bienvenidos"',
     },
     {
-      tiempoInicial: 2.6,
+      tiempoInicial: 2.8,
       tiempoFinal: 5.2,
       texto: '"Uuuuuuu"',
     },
@@ -387,6 +387,196 @@ export const cerroSeco: TLugar = {
       tiempoInicial: 8.6,
       tiempoFinal: 9.6,
       texto: 'La tapa de la olla',
+    },
+    {
+      tiempoInicial: 13.9,
+      tiempoFinal: 15.7,
+      texto: 'Sirviendo ensalada de frutas',
+    },
+    {
+      tiempoInicial: 19.2,
+      tiempoFinal: 21.5,
+      texto: '"¿Está difícil comer sin cuchara?"',
+    },
+    {
+      tiempoInicial: 28,
+      tiempoFinal: 32,
+      texto: 'Golpeteo de manos por el cuerpo',
+    },
+    {
+      tiempoInicial: 33,
+      tiempoFinal: 34,
+      texto: '"Pescaoooooo"',
+    },
+    {
+      tiempoInicial: 34,
+      tiempoFinal: 35,
+      texto: 'Palmas',
+    },
+    {
+      tiempoInicial: 38,
+      tiempoFinal: 39.5,
+      texto: '"Pescaoooooo"',
+    },
+    {
+      tiempoInicial: 39.5,
+      tiempoFinal: 41.5,
+      texto: 'Una alarma',
+    },
+    {
+      tiempoInicial: 41.5,
+      tiempoFinal: 48.5,
+      texto: 'Crujidos de escalera de guadua en la huerta',
+    },
+    {
+      tiempoInicial: 49,
+      tiempoFinal: 51,
+      texto: 'Grita un niño',
+    },
+    {
+      tiempoInicial: 54,
+      tiempoFinal: 57,
+      texto: 'Crujidos de gradas de guadua en Potocine',
+    },
+    {
+      tiempoInicial: 54,
+      tiempoFinal: 61,
+      texto: 'Columpio',
+    },
+    {
+      tiempoInicial: 63,
+      tiempoFinal: 65,
+      texto: '"Mira, puedes echarle sal al gusto"',
+    },
+    {
+      tiempoInicial: 65,
+      tiempoFinal: 68,
+      texto: 'Maracas',
+    },
+    {
+      tiempoInicial: 68,
+      tiempoFinal: 77,
+      texto: 'Bandera',
+    },
+    {
+      tiempoInicial: 79,
+      tiempoFinal: 81,
+      texto: 'Ave',
+    },
+    {
+      tiempoInicial: 81,
+      tiempoFinal: 82,
+      texto: 'Pala firulaisa',
+    },
+    {
+      tiempoInicial: 86,
+      tiempoFinal: 87.5,
+      texto: 'Vaporizador pff pff',
+    },
+    {
+      tiempoInicial: 89,
+      tiempoFinal: 92,
+      texto: 'Viento',
+    },
+    {
+      tiempoInicial: 96,
+      tiempoFinal: 98,
+      texto: 'Viento fuerte',
+    },
+    {
+      tiempoInicial: 98,
+      tiempoFinal: 101,
+      texto: 'Alcaraván',
+    },
+    {
+      tiempoInicial: 106,
+      tiempoFinal: 111,
+      texto: 'Barro en el borde de la laguna',
+    },
+    {
+      tiempoInicial: 120,
+      tiempoFinal: 122,
+      texto: 'Aves en bandada',
+    },
+    {
+      tiempoInicial: 122,
+      tiempoFinal: 123,
+      texto: 'Chirlobirlo',
+    },
+    {
+      tiempoInicial: 123,
+      tiempoFinal: 125,
+      texto: 'Motor',
+    },
+    {
+      tiempoInicial: 127,
+      tiempoFinal: 128,
+      texto: 'Grita un niño',
+    },
+    {
+      tiempoInicial: 129,
+      tiempoFinal: 131,
+      texto: 'Ramas de acacia',
+    },
+    {
+      tiempoInicial: 137.5,
+      tiempoFinal: 138.5,
+      texto: '"¿Qué encontraste?"',
+    },
+    {
+      tiempoInicial: 139,
+      tiempoFinal: 141,
+      texto: '"Una agagrópila de búho"',
+    },
+    {
+      tiempoInicial: 142,
+      tiempoFinal: 145,
+      texto: '"Esta está más chévere porque ya se llevó todo el pelo..."',
+    },
+    {
+      tiempoInicial: 146,
+      tiempoFinal: 147.5,
+      texto: 'Estornudos',
+    },
+    {
+      tiempoInicial: 148,
+      tiempoFinal: 149,
+      texto: 'Cremallera',
+    },
+    {
+      tiempoInicial: 149,
+      tiempoFinal: 150,
+      texto: '"Un escarabajo cerambícido"',
+    },
+    {
+      tiempoInicial: 150.5,
+      tiempoFinal: 155,
+      texto: 'Crujidos cerambícido',
+    },
+    {
+      tiempoInicial: 155,
+      tiempoFinal: 157,
+      texto: 'Viento',
+    },
+    {
+      tiempoInicial: 157,
+      tiempoFinal: 159,
+      texto: 'Vuelo cerambícido',
+    },
+    {
+      tiempoInicial: 165.4,
+      tiempoFinal: 167,
+      texto: 'Ritmo de palo',
+    },
+    {
+      tiempoInicial: 167,
+      tiempoFinal: 168,
+      texto: 'Pala de metal',
+    },
+    {
+      tiempoInicial: 168,
+      tiempoFinal: 171,
+      texto: '"Arroz con leche, mazamorra paisa..."',
     },
   ],
 };
